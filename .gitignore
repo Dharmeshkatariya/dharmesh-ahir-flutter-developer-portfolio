@@ -1,0 +1,45 @@
+﻿# Dependencies
+node_modules/
+package-lock.json
+
+# Environment files (SECRETS - NEVER commit these!)
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Build outputs
+dist/
+build/
+*.cjs
+*.cjs.map
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory
+coverage/
+
+# Misc
+.cache/
+.temp/
+tmp/
