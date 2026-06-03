@@ -595,6 +595,11 @@ export default function App() {
   const [aiLayoutMode, setAiLayoutMode] = useState<'orb' | 'bubble' | 'dock' | 'sidebar'>('bubble');
   const [isCmdPaletteOpen, setIsCmdPaletteOpen] = useState<boolean>(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  
+  // Animated download progress systems
+  const [downloadState, setDownloadState] = useState<'idle' | 'downloading' | 'success'>('idle');
+  const [downloadProgress, setDownloadProgress] = useState<number>(0);
+  const [downloadLog, setDownloadLog] = useState<string[]>([]);
 
   // Assistant Chat States
   const [aiHistory, setAiHistory] = useState<ChatMessage[]>([]);
@@ -1041,14 +1046,73 @@ export default function App() {
   };
 
   const printCV = () => {
-    playBeep(180, 0.15);
-    const link = document.createElement('a');
-    link.href = '/api/cv/download';
-    link.setAttribute('download', profile.cvFilename || 'Dharmesh_Ahir_Flutter_Resume.pdf');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (downloadState === 'downloading') return;
+    playBeep(220, 0.1);
+    setDownloadState('downloading');
+    setDownloadProgress(0);
+    setDownloadLog(['>> Connecting to secure PDF compilation service...']);
+    
+    const logs = [
+      '>> [00:00.05] Init PDF compiler engine... [OK]',
+      '>> [00:00.20] Resolving profile parameters from db.json...',
+      '>> [00:00.45] Compiling Helix Care case study telemetry...',
+      '>> [00:00.70] Assembling offline-first BLoC & SQLite structures...',
+      '>> [00:00.95] Linking verified developer credentials...',
+      '>> [00:01.20] Encoding document layout to PDF/A spec...',
+      '>> [00:01.35] Stream packaging & compression complete... [82.8KB]',
+      '>> [00:01.50] Dispatching download payload to client agent...'
+    ];
+
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += Math.floor(Math.random() * 12) + 6;
+      if (progress >= 100) {
+        progress = 100;
+        setDownloadProgress(100);
+        setDownloadLog((prev) => [...prev, logs[logs.length - 1], '>> File download initiated. Enjoy!']);
+        clearInterval(interval);
+        setDownloadState('success');
+        
+        playBeep(580, 0.08);
+        setTimeout(() => playBeep(880, 0.15), 80);
+
+        // Initiate direct download
+        const link = document.createElement('a');
+        link.href = '/api/cv/download';
+        link.setAttribute('download', profile.cvFilename || 'Dharmesh_Ahir_Flutter_Resume.pdf');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setTimeout(() => {
+          setDownloadState('idle');
+          setDownloadProgress(0);
+        }, 2200);
+      } else {
+        setDownloadProgress(progress);
+        
+        // Push log entries based on progress milestone
+        const logIndex = Math.floor((progress / 100) * (logs.length - 1));
+        setDownloadLog((prev) => {
+          const nextLog = logs[logIndex];
+          if (!prev.includes(nextLog)) {
+            return [...prev, nextLog];
+          }
+          return prev;
+        });
+
+        playBeep(400 + progress * 2.5, 0.025);
+      }
+    }, 150);
   };
+
+  useEffect(() => {
+    const handleDownloadRequest = () => {
+      printCV();
+    };
+    window.addEventListener('trigger_cv_download', handleDownloadRequest);
+    return () => window.removeEventListener('trigger_cv_download', handleDownloadRequest);
+  }, [profile, downloadState]);
 
   const copyEmailToClipboard = () => {
     navigator.clipboard.writeText(profile.email || 'katariyadharmesh658@gmail.com');
@@ -1447,7 +1511,7 @@ export default function App() {
   };
 
   return (
-    <div className={`transition-all duration-700 min-h-screen relative text-glow-none ${getThemeClass()} ${isDarkMode ? 'dark' : 'light-mode'}`}>
+    <div className={`transition-all duration-700 min-h-screen relative text-glow-none ${getThemeClass()} ${isDarkMode ? 'dark' : 'light-mode'} ${isAiOpen && aiLayoutMode === 'sidebar' && !isAiMaximized ? 'lg:pr-[380px] xl:pr-[440px]' : ''}`}>
       
       {/* PERFORMANCE CANVAS FOR 3D PARTICLES / GRID UNIVERSE */}
       <ThreeBackground bgType={bgType} theme={theme} mousePos={mousePos} mouseRelative={mouseRelative} customConfig={studioConfig} />
@@ -3324,6 +3388,74 @@ export default function App() {
 
               </div>
 
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* --- CV RESUME ANIMATED DOWNLOAD OVERLAY --- */}
+      <AnimatePresence>
+        {downloadState !== 'idle' && (
+          <div className="fixed inset-0 z-[11000] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 select-none">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-black/95 border border-white/10 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl p-6 space-y-6 text-white font-mono"
+            >
+              <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                <div className="flex items-center gap-2">
+                  <Download className="w-4 h-4 text-[var(--accent)] animate-bounce" />
+                  <span className="text-xs font-bold uppercase tracking-wider">PDF Compilation Suite</span>
+                </div>
+                <span className="text-[9px] bg-[var(--accent)]/15 text-[var(--accent)] px-2 py-0.5 rounded uppercase font-bold">
+                  {downloadState === 'downloading' ? 'COMPILING' : 'SUCCESS'}
+                </span>
+              </div>
+
+              {/* Progress Dial & Status */}
+              <div className="flex flex-col items-center justify-center py-2 space-y-4">
+                <div className="relative w-24 h-24 flex items-center justify-center">
+                  {/* SVG progress circle */}
+                  <svg className="w-full h-full transform -rotate-90">
+                    <circle cx="48" cy="48" r="40" stroke="rgba(255,255,255,0.05)" strokeWidth="6" fill="transparent" />
+                    <circle 
+                      cx="48" 
+                      cy="48" 
+                      r="40" 
+                      stroke="var(--accent)" 
+                      strokeWidth="6" 
+                      fill="transparent" 
+                      strokeDasharray={2 * Math.PI * 40}
+                      strokeDashoffset={2 * Math.PI * 40 * (1 - downloadProgress / 100)}
+                      className="transition-all duration-150"
+                    />
+                  </svg>
+                  <span className="absolute text-lg font-bold text-white tracking-tighter">
+                    {downloadProgress}%
+                  </span>
+                </div>
+
+                <div className="text-center">
+                  <p className="text-xs font-bold text-white uppercase tracking-wider">
+                    {downloadState === 'downloading' ? 'Generating Print-Ready Asset' : 'Dossier Dispatched Successfully'}
+                  </p>
+                  <p className="text-[10px] text-zinc-500 mt-1">Dharmesh_Ahir_Flutter_Resume.pdf</p>
+                </div>
+              </div>
+
+              {/* Fake Compiler Logs console box */}
+              <div className="bg-[#030712] border border-white/5 p-3 rounded-xl h-36 overflow-y-auto space-y-1 text-[9.5px] text-zinc-400 select-all custom-scrollbar">
+                {downloadLog.map((log, idx) => (
+                  <div key={idx} className={log.includes('complete') || log.includes('initiated') ? 'text-emerald-400 font-bold' : log.includes('Resolving') ? 'text-cyan-400' : ''}>
+                    {log}
+                  </div>
+                ))}
+              </div>
+
+              <div className="text-center text-[8.5px] text-zinc-600 uppercase tracking-widest border-t border-white/5 pt-3">
+                {downloadState === 'downloading' ? 'Assembling system parameters...' : '✔ Transmission complete.'}
+              </div>
             </motion.div>
           </div>
         )}

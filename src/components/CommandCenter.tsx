@@ -149,6 +149,9 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   const [recentActions, setRecentActions] = useState<any[]>([]);
   const [activeProject, setActiveProject] = useState<Project | null>(null);
 
+  // Selected command index for keyboard navigation
+  const [selectedCommandIdx, setSelectedCommandIdx] = useState<number>(0);
+
   const [profile, setProfile] = useState<any>({
     name: 'Dharmesh Ahir',
     title: 'Flutter Developer',
@@ -167,7 +170,12 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       .catch(err => console.warn("Failed loading profile in CommandCenter:", err));
   }, []);
 
-  // Ctrl + K registration
+  useEffect(() => {
+    if (!paletteOpen) return;
+    setSelectedCommandIdx(0);
+  }, [searchQuery, paletteOpen]);
+
+  // Ctrl + K registration & Global ESC
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -185,6 +193,38 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Keyboard navigation within command list
+  useEffect(() => {
+    const handleNavigationKeys = (e: KeyboardEvent) => {
+      if (!paletteOpen) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedCommandIdx(prev => (prev + 1) % filteredCommands.length);
+        playSystemTick(400, 0.03);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedCommandIdx(prev => (prev - 1 + filteredCommands.length) % filteredCommands.length);
+        playSystemTick(400, 0.03);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (filteredCommands[selectedCommandIdx]) {
+          const cmd = filteredCommands[selectedCommandIdx];
+          setRecentActions((prev) => {
+            const exists = prev.some((item) => item.name === cmd.name);
+            if (exists) return prev;
+            return [cmd, ...prev].slice(0, 4);
+          });
+          cmd.action();
+          setPaletteOpen(false);
+          playSystemTick(750, 0.05);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleNavigationKeys);
+    return () => window.removeEventListener('keydown', handleNavigationKeys);
+  }, [paletteOpen, filteredCommands, selectedCommandIdx]);
+
   const triggerPreset = (preset: WorkspacePreset) => {
     playSystemTick(900, 0.12);
     onThemeChange(preset.config.theme);
@@ -196,36 +236,169 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     }
   };
 
-  // Commands lookup array for command palette search
   const commands = [
-    { name: 'Switch to Developer IDE Dashboard', icon: 'Terminal', category: 'Layout', action: () => onLayoutChange('developer-dashboard') },
-    { name: 'Switch to Ambient Glass Workspace', icon: 'Sparkles', category: 'Layout', action: () => onLayoutChange('glassmorphism-studio') },
-    { name: 'Switch to Left Sidebar Studio', icon: 'Layout', category: 'Layout', action: () => onLayoutChange('left-sidebar') },
-    { name: 'Switch to Apple Minimal Clean Layout', icon: 'Layers', category: 'Layout', action: () => onLayoutChange('apple-minimal') },
-    { name: 'Switch to Command Line Console', icon: 'Terminal', category: 'Layout', action: () => onLayoutChange('terminal-hacker') },
-    { name: 'Switch to Official Flutter Blue Theme', icon: 'Palette', category: 'Theme', action: () => onThemeChange('flutter-official') },
-    { name: 'Switch to Sleek Nord Light theme', icon: 'Palette', category: 'Theme', action: () => onThemeChange('nord') },
-    { name: 'Switch to Terminal Block Cursor', icon: 'Type', category: 'Cursor', action: () => onCursorChange('terminal') },
-    { name: 'Switch to Liquid Glass Blob Cursor', icon: 'Type', category: 'Cursor', action: () => onCursorChange('blob') },
-    { name: 'Load Recruiter Focus Workspace Preset', icon: 'Briefcase', category: 'Presets', action: () => triggerPreset(workspacePresets[0]) },
-    { name: 'Load IDE Developer Tooling Preset', icon: 'Terminal', category: 'Presets', action: () => triggerPreset(workspacePresets[2]) },
-    { name: 'Load High-Contrast Minimalist Preset', icon: 'Layers', category: 'Presets', action: () => triggerPreset(workspacePresets[4]) },
-    { name: 'Reset All Workspace Preferences', icon: 'RefreshCw', category: 'System', action: () => {
+    { 
+      name: 'Switch to Developer IDE Dashboard', 
+      icon: 'Terminal', 
+      category: 'Layout', 
+      description: 'Transforms the portfolio into an interactive IDE simulator. Ideal for reviewing code snippets, running parallel isolates, and testing real-time performance indicators.',
+      details: 'Optimized workspace. Code simulators, memory monitoring, and multithreaded benchmarks.',
+      shortcut: '⌥1',
+      action: () => onLayoutChange('developer-dashboard') 
+    },
+    { 
+      name: 'Switch to Ambient Glass Workspace', 
+      icon: 'Sparkles', 
+      category: 'Layout', 
+      description: 'Maximum immersive glassmorphism environment. Loaded with floating light shaders, smooth reflections, and premium ambient glows.',
+      details: 'Curated design with harmonic HSL overlays and card depth lifting.',
+      shortcut: '⌥2',
+      action: () => onLayoutChange('glassmorphism-studio') 
+    },
+    { 
+      name: 'Switch to Left Sidebar Studio', 
+      icon: 'Layout', 
+      category: 'Layout', 
+      description: 'Sleek, desktop-class workspace with a persistent sidebar menu on the left side, offering fast tab-switches and clean metrics monitoring.',
+      details: 'Inspired by modern code editors. Multi-layout dispatchers and live sync metrics.',
+      shortcut: '⌥3',
+      action: () => onLayoutChange('left-sidebar') 
+    },
+    { 
+      name: 'Switch to Apple Minimal Clean Layout', 
+      icon: 'Layers', 
+      category: 'Layout', 
+      description: 'Minimalist layout focusing on layout whitespace and pristine typography scales. Minimizes interface noise to prioritize visual speed.',
+      details: 'Premium, quiet aesthetic, Outfit typefaces, and sub-pixel lines.',
+      shortcut: '⌥4',
+      action: () => onLayoutChange('apple-minimal') 
+    },
+    { 
+      name: 'Switch to Command Line Console', 
+      icon: 'Terminal', 
+      category: 'Layout', 
+      description: 'Full-featured retro command line console simulation. Allows navigating projects and executing system instructions using typed commands.',
+      details: 'Interactive Dart CLI sandbox with real-time feedback loops.',
+      shortcut: '⌥5',
+      action: () => onLayoutChange('terminal-hacker') 
+    },
+    { 
+      name: 'Switch to Official Flutter Blue Theme', 
+      icon: 'Palette', 
+      category: 'Theme', 
+      description: 'Activates the custom theme inspired by standard Google Flutter color maps. Imbues the site with deep blue overlays and turquoise accents.',
+      details: 'Material-inspired. Cyan glows and turquoise status buttons.',
+      shortcut: '⌘F',
+      action: () => onThemeChange('flutter-official') 
+    },
+    { 
+      name: 'Switch to Sleek Nord Light theme', 
+      icon: 'Palette', 
+      category: 'Theme', 
+      description: 'Applies the popular Nord arctic-ice color scheme. Ideal for light-mode readability with muted blue and gray details.',
+      details: 'Clean, low contrast, optimized light-mode variables.',
+      shortcut: '⌘N',
+      action: () => onThemeChange('nord') 
+    },
+    { 
+      name: 'Switch to Terminal Block Cursor', 
+      icon: 'Type', 
+      category: 'Cursor', 
+      description: 'Configures a green terminal block cursor with custom scanlines. Responds with typewriting audio feedback on hover.',
+      details: 'Ideal for developers. Retro green retro block styling.',
+      shortcut: '⌥C',
+      action: () => onCursorChange('terminal') 
+    },
+    { 
+      name: 'Switch to Liquid Glass Blob Cursor', 
+      icon: 'Type', 
+      category: 'Cursor', 
+      description: 'Activates a responsive liquid blob cursor that morphs and expands magnetically when hovering over clickable elements.',
+      details: 'Premium interaction. Fluid spring animations.',
+      shortcut: '⌥V',
+      action: () => onCursorChange('blob') 
+    },
+    { 
+      name: 'Load Recruiter Focus Workspace Preset', 
+      icon: 'Briefcase', 
+      category: 'Presets', 
+      description: 'Instant configuration shift highlighting key performance ratios, job availability status, and direct communication logs.',
+      details: 'Switches to Apple White theme, Developer layout, and Apple cursor.',
+      shortcut: '⌥R',
+      action: () => triggerPreset(workspacePresets[0]) 
+    },
+    { 
+      name: 'Load IDE Developer Tooling Preset', 
+      icon: 'Terminal', 
+      category: 'Presets', 
+      description: 'Configures workspace parameters to emphasize developer tools. Spawns code simulation, isolates controls, and logs console pipelines.',
+      details: 'Tesla Black theme, Terminal layout, and Terminal cursor.',
+      shortcut: '⌥D',
+      action: () => triggerPreset(workspacePresets[2]) 
+    },
+    { 
+      name: 'Load High-Contrast Minimalist Preset', 
+      icon: 'Layers', 
+      category: 'Presets', 
+      description: 'Ultra-clean theme preset emphasizing whitespace, minimalist fonts, and zero ambient shaders to isolate reading focus.',
+      details: 'Nord theme, Apple minimal layout, and Magnetic cursor.',
+      shortcut: '⌥M',
+      action: () => triggerPreset(workspacePresets[4]) 
+    },
+    { 
+      name: 'Reset All Workspace Preferences', 
+      icon: 'RefreshCw', 
+      category: 'System', 
+      description: 'Restores all workspace variables to default parameters (Ocean Blue theme, Glassmorphism layout, and default cursor physics).',
+      details: 'Flushes localStorage config cache and resets theme tags.',
+      shortcut: '⌥X',
+      action: () => {
         onThemeChange('ocean');
         onLayoutChange('glassmorphism-studio');
         onCursorChange('glass');
         onBgChange('particles');
         playSystemTick(200, 0.2);
-    }},
-    { name: 'Download Professional CV (PDF)', icon: 'Download', category: 'Hiring', action: () => {
-        const link = document.createElement('a');
-        link.href = '#cv-direct';
-        link.click();
+      }
+    },
+    { 
+      name: 'Download Professional CV (PDF)', 
+      icon: 'Download', 
+      category: 'Hiring', 
+      description: 'Triggers the global premium resume compilation and download pipeline. Includes 0-100% progress animation and audio notifications.',
+      details: 'Downloads print-ready resume PDF directly (no txt fallback).',
+      shortcut: '⌥P',
+      action: () => {
+        window.dispatchEvent(new Event('trigger_cv_download'));
         if (onCustomTrigger) onCustomTrigger('download-cv');
-    }},
-    { name: 'Launch 3D System Design Lab', icon: 'Network', category: 'Tools', action: () => { setHubOpen(true); setActiveTab('design-lab'); } },
-    { name: 'Launch interactive Widget Museum', icon: 'Laptop', category: 'Tools', action: () => { setHubOpen(true); setActiveTab('developer-sandbox'); } },
-    { name: 'View Developer DNA Map', icon: 'Award', category: 'Tools', action: () => { setHubOpen(true); setActiveTab('dna'); } }
+      }
+    },
+    { 
+      name: 'Launch 3D System Design Lab', 
+      icon: 'Network', 
+      category: 'Tools', 
+      description: 'Opens the premium system design lab containing a fully interactive 3D representation of Dharmesh’s enterprise architecture model.',
+      details: '3D Orbit node models, draggable vertices, and component detail logs.',
+      shortcut: '⌥S',
+      action: () => { setHubOpen(true); setActiveTab('design-lab'); } 
+    },
+    { 
+      name: 'Launch interactive Widget Museum', 
+      icon: 'Laptop', 
+      category: 'Tools', 
+      description: 'Opens a sandbox workspace containing custom-built, responsive Flutter widgets compiled on web templates.',
+      details: 'Interactive Dart layouts, counters, and responsive frame renderers.',
+      shortcut: '⌥W',
+      action: () => { setHubOpen(true); setActiveTab('developer-sandbox'); } 
+    },
+    { 
+      name: 'View Developer DNA Map', 
+      icon: 'Award', 
+      category: 'Tools', 
+      description: 'Opens the professional competence matrix illustrating core achievements, performance badges, and EXP meters.',
+      details: 'Dharmesh’s verified skill credentials and unlocking conditions.',
+      shortcut: '⌥A',
+      action: () => { setHubOpen(true); setActiveTab('dna'); } 
+    }
   ];
 
   const filteredCommands = commands.filter(cmd => 
@@ -262,24 +435,24 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       {/* --- COMMAND PALETTE SEARCH OVERLAY (Ctrl+K) --- */}
       <AnimatePresence>
         {paletteOpen && (
-          <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-[10000] flex items-start justify-center pt-[10vh] px-4">
+          <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-[10000] flex items-start justify-center pt-[10vh] px-4 select-none">
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: -20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: -20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-              className="w-full max-w-2xl bg-[var(--bg-secondary)] border border-[var(--panel-border)] rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+              className="w-full max-w-4xl bg-[var(--bg-secondary)] border border-[var(--panel-border)] rounded-2xl overflow-hidden shadow-2xl flex flex-col"
               style={{ boxShadow: 'var(--panel-glow)' }}
             >
               {/* Apple-style window titlebar */}
-              <div className="flex items-center justify-between px-5 pt-3.5 pb-2 bg-[var(--bg-primary)]/80 border-b border-[var(--panel-border)]/50 select-none">
+              <div className="flex items-center justify-between px-5 pt-3.5 pb-2 bg-[var(--bg-primary)]/80 border-b border-[var(--panel-border)]/50">
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 rounded-full bg-rose-500 cursor-pointer hover:opacity-85" onClick={() => setPaletteOpen(false)} />
                   <div className="w-3 h-3 rounded-full bg-amber-400" />
                   <div className="w-3 h-3 rounded-full bg-emerald-500" />
                 </div>
                 <span className="text-[10px] font-mono uppercase font-black tracking-widest text-[var(--accent)]">
-                  System Command Core 4.0
+                  System Command Core 5.0
                 </span>
                 <span className="text-[9px] font-mono text-[var(--text-muted)] opacity-60">
                   CTRL+K MODULE
@@ -306,7 +479,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
               </div>
 
               {/* Quick Categories filter Badges */}
-              <div className="flex gap-1.5 px-5 py-2.5 bg-[var(--bg-primary)]/40 border-b border-[var(--panel-border)] overflow-x-auto scrollbar-thin select-none">
+              <div className="flex gap-1.5 px-5 py-2.5 bg-[var(--bg-primary)]/40 border-b border-[var(--panel-border)] overflow-x-auto scrollbar-thin">
                 {[
                   { label: 'Show All', query: '' },
                   { label: 'Themes', query: 'theme' },
@@ -322,7 +495,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                       setSearchQuery(badge.query);
                       playSystemTick(400, 0.05);
                     }}
-                    className={`px-3 py-1 rounded-full text-[9px] font-mono font-bold uppercase transition-all whitespace-nowrap border ${
+                    className={`px-3 py-1 rounded-full text-[9px] font-mono font-bold uppercase transition-all whitespace-nowrap border cursor-pointer ${
                       (badge.query === '' && searchQuery === '') || (badge.query !== '' && searchQuery.toLowerCase().includes(badge.query))
                         ? 'bg-[var(--accent)] border-[var(--accent)] text-black'
                         : 'bg-[var(--bg-secondary)]/80 text-[var(--text-muted)] border-[var(--panel-border)] hover:border-[var(--accent)]/50'
@@ -333,88 +506,187 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                 ))}
               </div>
 
-              {/* Suggestions List */}
-              <div className="max-h-[350px] overflow-y-auto p-2 divide-y divide-[var(--panel-border)]/40 bg-[var(--bg-secondary)]">
+              {/* Suggestions List & Preview Pane (Two-Column split) */}
+              <div className="grid grid-cols-1 md:grid-cols-12 overflow-hidden h-[380px] divide-x divide-[var(--panel-border)]/30">
                 
-                {/* RECENT ACTIONS ROW */}
-                {recentActions.length > 0 && !searchQuery && (
-                  <div className="pb-3 pt-1">
-                    <p className="text-[9px] font-mono font-black text-[var(--accent)] uppercase tracking-wider px-3 mb-1.5">★ Recently Executed Commands</p>
-                    <div className="grid grid-cols-2 gap-1.5 px-2">
-                      {recentActions.map((cmd, rIdx) => (
+                {/* Left Column: Grouped Commands list */}
+                <div className="md:col-span-7 overflow-y-auto p-2 bg-[var(--bg-secondary)] custom-scrollbar space-y-1">
+                  
+                  {/* RECENT ACTIONS ROW */}
+                  {recentActions.length > 0 && !searchQuery && (
+                    <div className="pb-2 pt-1">
+                      <p className="text-[8px] font-mono font-black text-[var(--accent)] uppercase tracking-wider px-3 mb-1">★ Recent Searches</p>
+                      <div className="grid grid-cols-2 gap-1.5 px-2">
+                        {recentActions.map((cmd, rIdx) => (
+                          <button
+                            key={`recent-${rIdx}`}
+                            onClick={() => {
+                              cmd.action();
+                              setPaletteOpen(false);
+                              playSystemTick(850, 0.05);
+                            }}
+                            className="flex items-center justify-between text-left p-2 rounded-xl border border-[var(--panel-border)]/50 bg-[var(--bg-primary)]/40 hover:border-[var(--accent)]/30 transition-all text-[var(--text-main)] hover:text-[var(--accent)] group cursor-pointer"
+                          >
+                            <span className="text-[9.5px] uppercase font-bold truncate">{cmd.name}</span>
+                            <span className="text-[7.5px] font-mono text-[var(--text-muted)] opacity-60 px-1 py-0.2 rounded bg-white/5">
+                              {cmd.shortcut}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-[8px] font-mono font-black text-[var(--text-muted)] uppercase tracking-wider px-3 py-1 border-b border-[var(--panel-border)]/20">All Available Commands</p>
+
+                  {filteredCommands.length > 0 ? (
+                    filteredCommands.map((cmd, idx) => {
+                      const isSelected = selectedCommandIdx === idx;
+                      const renderIcon = (name: string) => {
+                        const iconProps = { className: `w-4 h-4 transition-colors ${isSelected ? 'text-[var(--accent)]' : 'text-neutral-400 group-hover:text-white'}` };
+                        switch (name) {
+                          case 'Terminal': return <Terminal {...iconProps} />;
+                          case 'Sparkles': return <Sparkles {...iconProps} />;
+                          case 'Layout': return <Layout {...iconProps} />;
+                          case 'Palette': return <Palette {...iconProps} />;
+                          case 'Type': return <Type {...iconProps} />;
+                          case 'Briefcase': return <Briefcase {...iconProps} />;
+                          case 'Layers': return <Layers {...iconProps} />;
+                          case 'RefreshCw': return <RefreshCw {...iconProps} />;
+                          case 'Download': return <Download {...iconProps} />;
+                          case 'Network': return <Network {...iconProps} />;
+                          case 'Laptop': return <Laptop {...iconProps} />;
+                          case 'Award': return <Award {...iconProps} />;
+                          default: return <Sliders {...iconProps} />;
+                        }
+                      };
+
+                      return (
                         <button
-                          key={`recent-${rIdx}`}
+                          key={idx}
+                          onMouseEnter={() => setSelectedCommandIdx(idx)}
                           onClick={() => {
+                            setRecentActions((prev) => {
+                              const exists = prev.some((item) => item.name === cmd.name);
+                              if (exists) return prev;
+                              return [cmd, ...prev].slice(0, 4);
+                            });
                             cmd.action();
                             setPaletteOpen(false);
-                            playSystemTick(850, 0.05);
+                            playSystemTick(750, 0.05);
                           }}
-                          className="flex items-center justify-between text-left p-2.5 rounded-xl border border-[var(--panel-border)] bg-[var(--bg-primary)]/50 hover:border-[var(--accent)]/30 transition-all text-[var(--text-main)] hover:text-[var(--accent)] group"
+                          className={`w-full text-left px-3 py-2 rounded-xl flex items-center justify-between transition-all cursor-pointer group ${
+                            isSelected 
+                              ? 'bg-[var(--accent)]/10 border-l-4 border-[var(--accent)] pl-2 text-[var(--accent)] shadow-sm' 
+                              : 'hover:bg-white/[0.03] border-l-4 border-transparent text-[var(--text-main)]'
+                          }`}
                         >
-                          <div className="flex items-center gap-2 truncate">
-                            <span className="text-[10px] uppercase font-bold truncate">{cmd.name}</span>
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                              isSelected ? 'bg-[var(--accent)]/20' : 'bg-white/5 group-hover:bg-white/10'
+                            }`}>
+                              {renderIcon(cmd.icon)}
+                            </div>
+                            <div className="truncate">
+                              <p className={`text-xs font-semibold truncate ${isSelected ? 'text-[var(--accent)]' : 'text-[var(--text-main)]'}`}>{cmd.name}</p>
+                              <span className="text-[8.5px] uppercase font-mono font-bold text-[var(--text-muted)] tracking-wider opacity-70 block">{cmd.category}</span>
+                            </div>
                           </div>
-                          <span className="text-[8px] font-mono text-[var(--text-muted)] opacity-65 flex items-center justify-end px-1.5 py-0.5 rounded bg-[var(--text-main)]/5">
-                            {cmd.category}
+                          <span className={`text-[8px] font-mono px-2 py-0.5 rounded shrink-0 ${
+                            isSelected ? 'bg-[var(--accent)]/20 text-[var(--accent)] font-bold' : 'bg-white/5 text-zinc-500'
+                          }`}>
+                            {cmd.shortcut}
                           </span>
                         </button>
-                      ))}
+                      );
+                    })
+                  ) : (
+                    <div className="py-12 text-center text-[var(--text-muted)] flex flex-col items-center justify-center gap-2 bg-[var(--bg-secondary)]">
+                      <ShieldAlert className="w-8 h-8 text-[var(--text-muted)]/20 animate-bounce" />
+                      <p className="text-xs">No matching commands found</p>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
-                {filteredCommands.length > 0 ? (
-                  filteredCommands.map((cmd, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        setRecentActions((prev) => {
-                          const exists = prev.some((item) => item.name === cmd.name);
-                          if (exists) return prev;
-                          return [cmd, ...prev].slice(0, 4);
-                        });
-                        cmd.action();
-                        setPaletteOpen(false);
-                        playSystemTick(750, 0.05);
-                      }}
-                      className="w-full text-left px-4 py-3 rounded-xl flex items-center justify-between hover:bg-[var(--accent)]/10 text-[var(--text-main)] transition-all cursor-pointer group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-[var(--text-main)]/5 flex items-center justify-center text-[var(--text-main)] group-hover:bg-[var(--accent)]/20 group-hover:text-[var(--accent)]">
-                          {cmd.icon === 'Terminal' && <Terminal className="w-4 h-4" />}
-                          {cmd.icon === 'Sparkles' && <Sparkles className="w-4 h-4" />}
-                          {cmd.icon === 'Layout' && <Layout className="w-4 h-4" />}
-                          {cmd.icon === 'Palette' && <Palette className="w-4 h-4" />}
-                          {cmd.icon === 'Type' && <Type className="w-4 h-4" />}
-                          {cmd.icon === 'Briefcase' && <Briefcase className="w-4 h-4" />}
-                          {cmd.icon === 'Layers' && <Layers className="w-4 h-4" />}
-                          {cmd.icon === 'RefreshCw' && <RefreshCw className="w-4 h-4" />}
-                          {cmd.icon === 'Download' && <Download className="w-4 h-4" />}
-                          {cmd.icon === 'Network' && <Network className="w-4 h-4" />}
-                          {cmd.icon === 'Laptop' && <Laptop className="w-4 h-4" />}
-                          {cmd.icon === 'Award' && <Award className="w-4 h-4" />}
+                {/* Right Column: Preview Pane */}
+                <div className="md:col-span-5 bg-[var(--bg-primary)]/30 p-5 flex flex-col justify-between overflow-y-auto">
+                  {filteredCommands[selectedCommandIdx] ? (
+                    (() => {
+                      const activeCmd = filteredCommands[selectedCommandIdx];
+                      const renderLargeIcon = (name: string) => {
+                        const iconProps = { className: "w-6 h-6 text-[var(--accent)] animate-pulse" };
+                        switch (name) {
+                          case 'Terminal': return <Terminal {...iconProps} />;
+                          case 'Sparkles': return <Sparkles {...iconProps} />;
+                          case 'Layout': return <Layout {...iconProps} />;
+                          case 'Palette': return <Palette {...iconProps} />;
+                          case 'Type': return <Type {...iconProps} />;
+                          case 'Briefcase': return <Briefcase {...iconProps} />;
+                          case 'Layers': return <Layers {...iconProps} />;
+                          case 'RefreshCw': return <RefreshCw {...iconProps} />;
+                          case 'Download': return <Download {...iconProps} />;
+                          case 'Network': return <Network {...iconProps} />;
+                          case 'Laptop': return <Laptop {...iconProps} />;
+                          case 'Award': return <Award {...iconProps} />;
+                          default: return <Sliders {...iconProps} />;
+                        }
+                      };
+
+                      return (
+                        <div className="space-y-4 h-full flex flex-col justify-between">
+                          <div className="space-y-4">
+                            {/* Icon Vessel */}
+                            <div className="h-12 w-12 rounded-xl bg-[var(--accent)]/15 border border-[var(--accent)]/30 flex items-center justify-center shadow-lg">
+                              {renderLargeIcon(activeCmd.icon)}
+                            </div>
+                            
+                            {/* Command details */}
+                            <div className="space-y-1.5">
+                              <span className="text-[7.5px] font-mono font-black uppercase px-2 py-0.5 rounded bg-[var(--accent)]/15 text-[var(--accent)] tracking-widest inline-block">
+                                {activeCmd.category}
+                              </span>
+                              <h4 className="text-xs font-black text-white leading-normal uppercase tracking-wide">
+                                {activeCmd.name}
+                              </h4>
+                            </div>
+
+                            {/* Description block */}
+                            <p className="text-[10.5px] text-[var(--text-muted)] leading-relaxed font-sans select-text">
+                              {activeCmd.description}
+                            </p>
+
+                            {/* Telemetry Block */}
+                            {activeCmd.details && (
+                              <div className="bg-white/[0.02] border border-white/5 p-3 rounded-xl space-y-1">
+                                <span className="text-[7.5px] font-mono text-zinc-500 uppercase tracking-widest font-black block">// System Telemetry</span>
+                                <p className="text-[9.5px] font-mono text-zinc-300 leading-normal">{activeCmd.details}</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Quick Hotkey Indicator */}
+                          <div className="pt-3 border-t border-white/5 flex justify-between items-center text-[9px] font-mono text-zinc-550 font-bold uppercase">
+                            <span>Execute command</span>
+                            <kbd className="text-[var(--accent)] bg-[var(--accent)]/15 border border-[var(--accent)]/25 px-2 py-0.5 rounded font-black text-[9px]">
+                              {activeCmd.shortcut || 'Enter ↵'}
+                            </kbd>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-[var(--text-main)] group-hover:text-[var(--accent)] transition-all">{cmd.name}</p>
-                          <span className="text-[10px] uppercase font-mono font-bold text-[var(--text-muted)] tracking-wider group-hover:text-[var(--text-main)]/60">{cmd.category}</span>
-                        </div>
-                      </div>
-                      <span className="text-[10px] font-mono text-[var(--text-muted)] bg-[var(--text-main)]/5 px-2 py-0.5 rounded group-hover:bg-[var(--accent)]/15 group-hover:text-[var(--accent)] flex items-center gap-1">
-                        EXECUTE <ArrowRight className="w-3 h-3" />
-                      </span>
-                    </button>
-                  ))
-                ) : (
-                  <div className="py-12 text-center text-[var(--text-muted)] flex flex-col items-center justify-center gap-2 bg-[var(--bg-secondary)]">
-                    <ShieldAlert className="w-8 h-8 text-[var(--text-muted)]/20 animate-bounce" />
-                    <p className="text-sm">No matching portfolio commands found</p>
-                  </div>
-                )}
+                      );
+                    })()
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-center text-zinc-600 gap-2 font-mono py-12">
+                      <Sliders className="w-8 h-8 opacity-10" />
+                      <p className="text-[9px] uppercase tracking-wider">Select command to inspect parameters</p>
+                    </div>
+                  )}
+                </div>
+
               </div>
 
               {/* Hotkeys Footer */}
-              <div className="px-5 py-3 border-t border-[var(--panel-border)] bg-[var(--bg-primary)]/80 flex items-center justify-between text-[11px] font-mono text-[var(--text-muted)]">
-                <span>Use <kbd className="px-1 py-0.2 bg-[var(--text-main)]/5 rounded text-[var(--text-main)] font-bold">↑↓</kbd> to navigate, <kbd className="px-1 py-0.2 bg-[var(--text-main)]/5 rounded text-[var(--text-main)] font-bold">Enter</kbd> to select</span>
+              <div className="px-5 py-2.5 border-t border-[var(--panel-border)]/50 bg-[var(--bg-primary)]/80 flex items-center justify-between text-[10px] font-mono text-[var(--text-muted)] opacity-80">
+                <span>Use <kbd className="px-1 py-0.2 bg-white/5 rounded text-white font-bold">↑↓</kbd> keys to navigate, <kbd className="px-1 py-0.2 bg-white/5 rounded text-white font-bold">Enter</kbd> to select</span>
                 <span>ESC to close</span>
               </div>
             </motion.div>
