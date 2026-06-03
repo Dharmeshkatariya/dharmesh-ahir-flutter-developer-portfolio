@@ -758,14 +758,13 @@ export const EliteExtraHUD: React.FC<EliteExtraHUDProps> = ({ profile: propProfi
                 </button>
 
                 {/* Download CV File */}
-                <a
-                  href="/api/cv/download"
-                  download="Dharmesh_Ahir_Flutter_Resume.pdf"
-                  onClick={() => {
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
                     setSmartActionsOpen(false);
-                    playEliteSound('success');
+                    notifyDirectTrigger('trigger_cv_download');
                   }}
-                  className="flex flex-col items-center justify-center text-center p-3.5 bg-white/[0.02] border border-white/5 hover:border-emerald-500/30 rounded-xl transition-all hover:bg-white/[0.04] group relative overflow-hidden"
+                  className="flex flex-col items-center justify-center text-center p-3.5 bg-white/[0.02] border border-white/5 hover:border-emerald-500/30 rounded-xl transition-all hover:bg-white/[0.04] group relative overflow-hidden w-full cursor-pointer"
                 >
                   <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform duration-300">
                     <Download className="w-5 h-5" />
@@ -775,16 +774,16 @@ export const EliteExtraHUD: React.FC<EliteExtraHUDProps> = ({ profile: propProfi
                     <span className="text-[7.5px] font-mono text-white/40 block">PDF Stream CV File</span>
                   </div>
                   <div className="absolute inset-0 bg-emerald-400/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                </a>
+                </button>
 
                 {/* Export Portfolio PDF */}
-                <a
-                  href="/api/cv/download"
-                  download="Dharmesh_Ahir_Flutter_Resume.pdf"
-                  onClick={() => {
-                    playEliteSound('success');
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setSmartActionsOpen(false);
+                    notifyDirectTrigger('trigger_cv_download');
                   }}
-                  className="col-span-2 md:col-span-3 flex items-center justify-center gap-3 bg-gradient-to-r from-[var(--accent)]/10 to-purple-500/10 border border-[var(--accent)]/20 hover:border-[var(--accent)]/50 p-3 rounded-xl transition-all hover:bg-white/[0.03] group relative overflow-hidden"
+                  className="col-span-2 md:col-span-3 flex items-center justify-center gap-3 bg-gradient-to-r from-[var(--accent)]/10 to-purple-500/10 border border-[var(--accent)]/20 hover:border-[var(--accent)]/50 p-3 rounded-xl transition-all hover:bg-white/[0.03] group relative overflow-hidden cursor-pointer"
                 >
                   <div className="p-2 rounded-lg bg-[var(--accent)]/25 text-[var(--accent)] group-hover:scale-110 transition-transform">
                     <FileText className="w-4 h-4" />
@@ -793,7 +792,7 @@ export const EliteExtraHUD: React.FC<EliteExtraHUDProps> = ({ profile: propProfi
                     <span className="block text-[10px] font-black uppercase text-white tracking-widest">Download Static Resume PDF</span>
                     <span className="text-[7.5px] font-mono text-white/50 block">Instant access to primary CV dossier</span>
                   </div>
-                </a>
+                </button>
 
               </div>
               

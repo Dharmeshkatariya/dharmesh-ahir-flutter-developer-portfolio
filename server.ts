@@ -241,8 +241,21 @@ app.post("/api/contact", (req, res) => {
 });
 
 app.get("/api/cv/download", (req, res) => {
-  const pdfPath = path.join(process.cwd(), "assets", "Dharmesh_Ahir_Flutter_Resume.pdf");
-  if (fs.existsSync(pdfPath)) {
+  const possiblePaths = [
+    path.join(process.cwd(), "assets", "Dharmesh_Ahir_Flutter_Resume.pdf"),
+    path.join(process.cwd(), "assets", "Resume.pdf"),
+    path.join(process.cwd(), "assets", ".aistudio", "Dharmesh_Ahir_Flutter_Resume.pdf")
+  ];
+  
+  let pdfPath = "";
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      pdfPath = p;
+      break;
+    }
+  }
+
+  if (pdfPath) {
     res.setHeader("Content-Disposition", "attachment; filename=Dharmesh_Ahir_Flutter_Resume.pdf");
     res.setHeader("Content-Type", "application/pdf");
     return res.sendFile(pdfPath);
@@ -311,6 +324,27 @@ Generated Dynamically from Live Portfolio Backend Engine
   res.setHeader("Content-Disposition", "attachment; filename=Dharmesh_Ahir_Flutter_Resume.txt");
   res.setHeader("Content-Type", "text/plain; charset=utf-8");
   res.send(resumeText);
+});
+
+app.get(["/Resume.pdf", "/Dharmesh_Ahir_Flutter_Resume.pdf"], (req, res) => {
+  const possiblePaths = [
+    path.join(process.cwd(), "assets", "Dharmesh_Ahir_Flutter_Resume.pdf"),
+    path.join(process.cwd(), "assets", "Resume.pdf"),
+    path.join(process.cwd(), "assets", ".aistudio", "Dharmesh_Ahir_Flutter_Resume.pdf")
+  ];
+  let pdfPath = "";
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      pdfPath = p;
+      break;
+    }
+  }
+  if (pdfPath) {
+    res.setHeader("Content-Disposition", "attachment; filename=Dharmesh_Ahir_Flutter_Resume.pdf");
+    res.setHeader("Content-Type", "application/pdf");
+    return res.sendFile(pdfPath);
+  }
+  res.status(404).send("Resume PDF asset not found");
 });
 
 async function runApplication() {
