@@ -6,6 +6,7 @@ interface ThreeBackgroundProps {
   theme: string;
   mousePos: { x: number; y: number };
   mouseRelative: { x: number; y: number };
+  timeOfDay?: 'morning' | 'afternoon' | 'evening' | 'night';
   customConfig?: {
     particleCount?: number;
     particleSize?: number;
@@ -27,6 +28,7 @@ export const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
   theme,
   mousePos,
   mouseRelative,
+  timeOfDay = 'night',
   customConfig,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -37,7 +39,15 @@ export const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
 
     // SCENE SETUP
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x020813, 0.012);
+
+    // Adjust Fog parameters according to time of day
+    let fogDensity = 0.012;
+    if (timeOfDay === 'morning') fogDensity = 0.008;
+    else if (timeOfDay === 'afternoon') fogDensity = 0.005;
+    else if (timeOfDay === 'evening') fogDensity = 0.015;
+    else if (timeOfDay === 'night') fogDensity = 0.022;
+
+    scene.fog = new THREE.FogExp2(0x020813, fogDensity);
 
     // CAMERA SETUP
     const width = container.clientWidth || window.innerWidth;
@@ -46,7 +56,15 @@ export const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
     camera.position.z = 24;
 
     // RENDERER SETUP
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    } catch (e) {
+      console.warn("WebGL is not fully supported in this sandboxed environment/iframe. Falling back gracefully.", e);
+      // Create simple placeholder backdrop styling gracefully
+      container.style.background = "radial-gradient(circle at 50% 50%, #031525 0%, #010409 100%)";
+      return;
+    }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(width, height);
     container.appendChild(renderer.domElement);
@@ -97,10 +115,26 @@ export const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
     scene.fog.color.setHex(colors.secondary);
 
     // AMBIENT LIGHTS & POINT LIGHTS
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
+    let ambientStrength = 0.45;
+    let pointLightStrength = 2.2;
+    if (timeOfDay === 'morning') {
+      ambientStrength = 0.70;
+      pointLightStrength = 2.8;
+    } else if (timeOfDay === 'afternoon') {
+      ambientStrength = 0.85;
+      pointLightStrength = 1.8;
+    } else if (timeOfDay === 'evening') {
+      ambientStrength = 0.40;
+      pointLightStrength = 3.0;
+    } else if (timeOfDay === 'night') {
+      ambientStrength = 0.25;
+      pointLightStrength = 3.5;
+    }
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, ambientStrength);
     scene.add(ambientLight);
 
-    const pointLight = new THREE.PointLight(colors.primary, 2.2, 85);
+    const pointLight = new THREE.PointLight(colors.primary, pointLightStrength, 85);
     pointLight.position.set(10, 15, 10);
     scene.add(pointLight);
 

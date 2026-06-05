@@ -80,3 +80,32 @@ export interface ChatMessage {
   text: string;
   timestamp: string;
 }
+
+export interface WorkspaceSnapshot {
+  id: string;
+  name: string;
+  layout: LayoutType;
+  theme: ThemeType;
+  particleSettings: { density: number; motion: number };
+  cursorStyle: string;
+  aiPanelState: { isOpen: boolean; mode: string };
+  dockState: { muted: boolean };
+  createdAt: string;
+}
+
+export interface SystemNotification {
+  id: string;
+  title: string;
+  message: string;
+  category: 'info' | 'success' | 'warn' | 'system';
+  timestamp: string;
+  duration?: number;
+}
+
+export interface ActivityLogItem {
+  id: string;
+  action: string;
+  details: string;
+  timestamp: string;
+  category: 'workspace' | 'theme' | 'ai' | 'portfolio' | 'operational';
+}

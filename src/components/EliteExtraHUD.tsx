@@ -471,17 +471,85 @@ export const EliteExtraHUD: React.FC<EliteExtraHUDProps> = ({ profile: propProfi
                           transition: 'transform 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                         }}
                       >
-                        {/* Premium Glass Tooltip System 3.0 (Responsive to Active Theme Colors) */}
-                        <div className="absolute bottom-[58px] left-1/2 -translate-x-1/2 opacity-0 group-hover/item:opacity-100 pointer-events-none transition-all duration-300 transform translate-y-3 group-hover/item:translate-y-0 w-44 z-[1010]">
-                          <div className="bg-[var(--card)] backdrop-blur-2xl border border-[var(--border)] p-2.5 rounded-xl text-center relative shadow-2xl">
-                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[var(--card)] border-b border-r border-[var(--border)] rotate-45" />
-                            <p className="text-[10px] font-sans font-black uppercase text-[var(--accent)] tracking-widest">{item.name}</p>
-                            <p className="text-[8.5px] font-mono text-[var(--text-main)] opacity-80 truncate">{item.username}</p>
-                            <div className="h-[1px] bg-[var(--border)] my-1" />
-                            <p className="text-[8px] font-mono text-emerald-400 font-bold flex items-center justify-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                              {item.status}
-                            </p>
+                        {/* Premium Glass Hover Preview Card System 3.0 (Dynamic statistics ratios) */}
+                        <div className="absolute bottom-[58px] left-1/2 -track-x-1/2 -translate-x-1/2 opacity-0 group-hover/item:opacity-100 pointer-events-none transition-all duration-300 transform translate-y-3 group-hover/item:translate-y-0 w-60 z-[1010]">
+                          <div className="bg-[#0b0f19]/95 border border-white/10 backdrop-blur-3xl p-4 rounded-2xl text-left relative shadow-[0_20px_50px_rgba(0,0,0,0.8)] space-y-3">
+                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#0b0f19] border-b border-r border-white/10 rotate-45" />
+                            
+                            {/* UPGRADED MINI PROFILE HEADER WITH BLUE VERIFICATION CHECKMARK */}
+                            <div className="flex items-center gap-2.5 border-b border-white/[0.08] pb-3">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[var(--accent)] via-cyan-400 to-indigo-500 p-[1.5px] relative shrink-0">
+                                <div className="w-full h-full rounded-full bg-zinc-950 flex items-center justify-center text-[10px] font-black font-sans text-white">
+                                  DA
+                                </div>
+                                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border border-zinc-900 flex items-center justify-center text-[6px] font-bold text-black font-mono">
+                                  ✓
+                                </span>
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1">
+                                  <p className="text-[10.5px] font-sans font-black text-white uppercase tracking-wider truncate">Dharmesh Ahir</p>
+                                  <span className="text-[8px] text-[#00e5ff] shrink-0 font-bold" title="Identity Verified Platform-Wide">✓</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="relative flex h-1.5 w-1.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                                  </span>
+                                  <span className="text-[7.5px] font-mono text-zinc-400 truncate uppercase tracking-wider">{item.name} Verified</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {item.id === 'github' ? (
+                              <div className="space-y-2">
+                                <div className="grid grid-cols-2 gap-1.5 text-center">
+                                  <div className="bg-black/60 p-1.5 rounded-xl border border-white/5">
+                                    <div className="text-[10px] font-black text-white">3,420</div>
+                                    <div className="text-[6.5px] font-mono text-neutral-500 uppercase tracking-wider">Commits</div>
+                                  </div>
+                                  <div className="bg-black/60 p-1.5 rounded-xl border border-white/5">
+                                    <div className="text-[10px] font-black text-amber-400">142</div>
+                                    <div className="text-[6.5px] font-mono text-neutral-500 uppercase tracking-wider">Stars</div>
+                                  </div>
+                                </div>
+                                <div className="text-[8px] font-mono text-neutral-400 leading-snug space-y-0.5 border-t border-white/[0.04] pt-2">
+                                  <div className="flex justify-between"><span>🛠️ Primary Stack:</span> <span className="text-white font-bold">Dart, Kotlin</span></div>
+                                  <div className="flex justify-between"><span>📈 Active State:</span> <span className="text-emerald-400">99.2% Uptime</span></div>
+                                </div>
+                              </div>
+                            ) : item.id === 'linkedin' ? (
+                              <div className="space-y-2">
+                                <div className="grid grid-cols-2 gap-1.5 text-center">
+                                  <div className="bg-black/60 p-1.5 rounded-xl border border-white/5">
+                                    <div className="text-[10px] font-black text-white">500+</div>
+                                    <div className="text-[6.5px] font-mono text-neutral-500 uppercase tracking-wider">Followers</div>
+                                  </div>
+                                  <div className="bg-black/60 p-1.5 rounded-xl border border-white/5">
+                                    <div className="text-[10px] font-black text-emerald-400">Verified</div>
+                                    <div className="text-[6.5px] font-mono text-neutral-500 uppercase tracking-wider">Status</div>
+                                  </div>
+                                </div>
+                                <div className="text-[8px] font-mono text-neutral-400 leading-snug space-y-0.5 border-t border-white/[0.04] pt-2">
+                                  <div className="flex justify-between"><span>💼 Core Role:</span> <span className="text-white font-bold">Flutter Lead</span></div>
+                                  <div className="flex justify-between"><span>⚡ SLA Latency:</span> <span className="text-emerald-400">&lt;3hr verified</span></div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <div className="bg-black/40 p-1.5 rounded-xl border border-white/5 text-[8.5px] text-neutral-300 font-sans leading-relaxed">
+                                  Encrypted communication channel pipeline. Secured via physical routing tunnels.
+                                </div>
+                                <div className="text-[7.5px] font-mono text-emerald-400 font-bold flex items-center justify-between border-t border-white/[0.04] pt-2">
+                                  <span className="text-neutral-500 uppercase">TELEMETRY LINK</span>
+                                  <span className="flex items-center gap-1 font-black animate-pulse">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                    {item.status}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
                           </div>
                         </div>
 
@@ -758,13 +826,14 @@ export const EliteExtraHUD: React.FC<EliteExtraHUDProps> = ({ profile: propProfi
                 </button>
 
                 {/* Download CV File */}
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
+                <a
+                  href="/api/cv/download"
+                  download="Dharmesh_Ahir_Flutter_Resume.pdf"
+                  onClick={() => {
                     setSmartActionsOpen(false);
-                    notifyDirectTrigger('trigger_cv_download');
+                    playEliteSound('success');
                   }}
-                  className="flex flex-col items-center justify-center text-center p-3.5 bg-white/[0.02] border border-white/5 hover:border-emerald-500/30 rounded-xl transition-all hover:bg-white/[0.04] group relative overflow-hidden w-full cursor-pointer"
+                  className="flex flex-col items-center justify-center text-center p-3.5 bg-white/[0.02] border border-white/5 hover:border-emerald-500/30 rounded-xl transition-all hover:bg-white/[0.04] group relative overflow-hidden"
                 >
                   <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform duration-300">
                     <Download className="w-5 h-5" />
@@ -774,16 +843,16 @@ export const EliteExtraHUD: React.FC<EliteExtraHUDProps> = ({ profile: propProfi
                     <span className="text-[7.5px] font-mono text-white/40 block">PDF Stream CV File</span>
                   </div>
                   <div className="absolute inset-0 bg-emerald-400/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                </button>
+                </a>
 
                 {/* Export Portfolio PDF */}
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setSmartActionsOpen(false);
-                    notifyDirectTrigger('trigger_cv_download');
+                <a
+                  href="/api/cv/download"
+                  download="Dharmesh_Ahir_Flutter_Resume.pdf"
+                  onClick={() => {
+                    playEliteSound('success');
                   }}
-                  className="col-span-2 md:col-span-3 flex items-center justify-center gap-3 bg-gradient-to-r from-[var(--accent)]/10 to-purple-500/10 border border-[var(--accent)]/20 hover:border-[var(--accent)]/50 p-3 rounded-xl transition-all hover:bg-white/[0.03] group relative overflow-hidden cursor-pointer"
+                  className="col-span-2 md:col-span-3 flex items-center justify-center gap-3 bg-gradient-to-r from-[var(--accent)]/10 to-purple-500/10 border border-[var(--accent)]/20 hover:border-[var(--accent)]/50 p-3 rounded-xl transition-all hover:bg-white/[0.03] group relative overflow-hidden"
                 >
                   <div className="p-2 rounded-lg bg-[var(--accent)]/25 text-[var(--accent)] group-hover:scale-110 transition-transform">
                     <FileText className="w-4 h-4" />
@@ -792,7 +861,7 @@ export const EliteExtraHUD: React.FC<EliteExtraHUDProps> = ({ profile: propProfi
                     <span className="block text-[10px] font-black uppercase text-white tracking-widest">Download Static Resume PDF</span>
                     <span className="text-[7.5px] font-mono text-white/50 block">Instant access to primary CV dossier</span>
                   </div>
-                </button>
+                </a>
 
               </div>
               

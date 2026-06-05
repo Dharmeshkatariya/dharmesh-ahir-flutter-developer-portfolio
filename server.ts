@@ -26,7 +26,7 @@ function getOfflineResponse(message: string): string {
       "Dharmesh is a specialized Flutter & Dart Engineer (Surat, Gujarat) with 3+ years of professional high-performance development experience.\n\n" +
       "**Get Print-Ready Resume:**\n" +
       "You can easily download his structured PDF resume by clicking the **\"Download CV\"** button located directly in the header of this portfolio interface. It will generate a beautiful, modern, print-ready layout instantly!\n\n" +
-      "Would you like me to tell you about his expert skills or major projects like the Helix Care Platform?")) + note;
+      "Would you like me to tell you about his expert skills or major projects like the Helix Care Platform?\n\n[RECRUITER_SUMMARY_CARD]")) + note;
   }
   
   if (query.includes("contact") || query.includes("email") || query.includes("phone") || query.includes("hire") || query.includes("mobile") || query.includes("call") || query.includes("address")) {
@@ -37,25 +37,25 @@ function getOfflineResponse(message: string): string {
       "- **GitHub:** [github.com/katariyadharmesh](https://github.com/katariyadharmesh)\n" +
       "- **LinkedIn:** [linkedin.com/in/dharmesh-ahir](https://linkedin.com/in/dharmesh-ahir)\n" +
       "- **Studio Address:** 419, 4th Floor, Nilkanth Plaza, Yogi Chowk, Surat, Gujarat, India (395010)\n\n" +
-      "I highly recommend reaching out directly via email or phone call to discuss critical timelines, architectures, or collaborations!")) + note;
+      "I highly recommend reaching out directly via email or phone call to discuss critical timelines, architectures, or collaborations!\n\n[RECRUITER_SUMMARY_CARD] \n\n[FOUNDER_SUMMARY_CARD]")) + note;
   }
   
-  if (query.includes("skill") || query.includes("tech") || query.includes("flutter") || query.includes("dart") || query.includes("bloc") || query.includes("riverpod") || query.includes("getx") || query.includes("state")) {
+  if (query.includes("skill") || query.includes("tech") || query.includes("flutter") || query.includes("dart") || query.includes("bloc") || query.includes("riverpod") || query.includes("getx") || query.includes("state") || query.includes("architecture")) {
     return (offline.skills || (intro +
       "Dharmesh Ahir has built a robust masterclass of technical expertise around Dart and the cross-platform Flutter framework:\n\n" +
       "1. **Core Architecture Principles:** Multithreading concepts utilizing custom Dart Isolates for background computation, custom painters for advanced custom UI, and sound memory management patterns (mitigating controller/stream leaks).\n" +
       "2. **State Management Masterclass:** Fully proficient in BLoC (ideal/robust patterns for scalable enterprise teams), Riverpod (declarative compile-time state safety), and GetX (high-velocity MVP deployment).\n" +
       "3. **Database & Sync:** Implementation of offline-first synchronizations with local caches like HiveDB and SQLite repositories combined with real-time Firebase Firestore database listeners.\n" +
-      "4. **WebRTC & Streaming:** Configured end-to-end encrypted video and audio consultation pipelines over custom STUN/TURN nodes for low-latency calls.")) + note;
+      "4. **WebRTC & Streaming:** Configured end-to-end encrypted video and audio consultation pipelines over custom STUN/TURN nodes for low-latency calls.\n\n[ARCH_REVIEW_CARD]")) + note;
   }
   
-  if (query.includes("project") || query.includes("work") || query.includes("experience") || query.includes("app") || query.includes("portfolio")) {
+  if (query.includes("project") || query.includes("work") || query.includes("experience") || query.includes("app") || query.includes("portfolio") || query.includes("recommend")) {
     return (offline.projects || (intro +
       "Dharmesh's professional software portfolio is highlight-packed with reliable high-volume apps:\n\n" +
       "- **Helix Care Platform:** A healthcare/telehealth ecosystem featuring interactive medical dashboard analytics, calendar synchronizations, and low-latency encrypted consultation channels (powered by custom WebRTC layers).\n" +
       "- **Resido Property Admin:** A full-stack real-estate management administration application comprising advanced maps integrations, image/document upload queues, and automated reporting systems.\n" +
       "- **Khata Ledger:** An ledger utility for offline-safe commercial or individual credits tracking, utilizing high-performance Hive local storage triggers combined with automated cloud backup nodes.\n\n" +
-      "All these applications stand as testament to his focus on optimized frame rendering, absolute type-safety, and meticulous visual alignment!")) + note;
+      "All these applications stand as testament to his focus on optimized frame rendering, absolute type-safety, and meticulous visual alignment!\n\n[PROJECT_REC_CARD]")) + note;
   }
   
   if (query.includes("hello") || query.includes("hi ") || query.includes("hey")) {
@@ -79,7 +79,7 @@ function getOfflineResponse(message: string): string {
 // API route for AI Portfolio Assistant Q&A
 app.post("/api/chat", async (req, res) => {
   try {
-    const { message, history } = req.body;
+    const { message, history, workspaceContext } = req.body;
     if (!message) {
       return res.status(400).json({ error: "Message content cannot be blank" });
     }
@@ -100,7 +100,7 @@ app.post("/api/chat", async (req, res) => {
       }
     });
 
-    const systemInstruction = `You are "Dharmesh AI", the highly polished, friendly, and expert AI Representative of Dharmesh Ahir.
+    let systemInstruction = `You are "Dharmesh AI", the highly polished, friendly, and expert AI Representative of Dharmesh Ahir.
 Dharmesh Ahir is a Senior Flutter Developer with over 3 years of professional experience building high-performance cross-platform Android, iOS, and Web solutions. He lives in Surat, Gujarat, India.
 
 His Contact Channels (Always specify clearly and accurately if asked):
@@ -122,7 +122,23 @@ Your Personality & Conversational Directives:
 - If they ask about his resume/CV, let them know they can click the custom "Get CV" action button centered directly in the top header section, which automatically generates a print-ready modern PDF!
 - Do not make up facts. If asked about arbitrary details outside his profile, politely bridge it back to his Flutter architect capabilities and availability.
 - Be technical and elegant when describing code systems. For instance, if asked about BLoC, discuss stream event loops, structured transitions, and state encapsulation.
-- Offer to recommend specific projects like "Helix Care Platform", "Resido property admin", or "Khata ledger" for their requirements.`;
+- Offer to recommend specific projects like "Helix Care Platform", "Resido property admin", or "Khata ledger" for their requirements.
+- CRITICAL INTERACTION ACTIONS:
+  1. If discussing recruitment, contracts, resumes, direct hiring, job openings, or professional history, you MUST add the exact tag \`[RECRUITER_SUMMARY_CARD]\` at the very end of your response text.
+  2. If discussing company vision, startups, venture consulting, partnerships, MVP delivery budgets, scalable business metrics, or founder goals, you MUST add the exact tag \`[FOUNDER_SUMMARY_CARD]\` at the very end of your response text.
+  3. If discussing clean architecture standards, state management (BLoC, Riverpod, etc.), optimization pipelines, or system refactoring review lists, you MUST add the exact tag \`[ARCH_REVIEW_CARD]\` at the very end of your response text.
+  4. If the visitor is asking for project matches, tool recommendations, recommendation vectors, or case study suitability, you MUST add the exact tag \`[PROJECT_REC_CARD]\` at the very end of your response text.`;
+
+    if (workspaceContext) {
+      systemInstruction += `\n\nCURRENT VISITOR CLIENT MONITORING TELEMETRY (AI WORKSPACE AWARENESS):
+- Active Layout Perspective: ${workspaceContext.layout || 'classic'}
+- Selected Visual Theme: ${workspaceContext.theme || 'purple'}
+- Application Mode: ${workspaceContext.mode || 'developer'}
+- Active Tab View: ${workspaceContext.activeTab || 'overview'}
+- Active Inspected Project: ${workspaceContext.selectedProject || 'None'}
+
+Acknowledge of this state context where appropriate. For example: "Since you are currently exploring the Helix Care project..." or "I see you are using the gorgeous Terminal Hacker layout, excellent taste!" This makes your response feel superpowered and closely integrated into the visual portfolio.`;
+    }
 
     // Map client conversation history to Gemini parts
     const contents: any[] = [];
@@ -241,21 +257,8 @@ app.post("/api/contact", (req, res) => {
 });
 
 app.get("/api/cv/download", (req, res) => {
-  const possiblePaths = [
-    path.join(process.cwd(), "assets", "Dharmesh_Ahir_Flutter_Resume.pdf"),
-    path.join(process.cwd(), "assets", "Resume.pdf"),
-    path.join(process.cwd(), "assets", ".aistudio", "Dharmesh_Ahir_Flutter_Resume.pdf")
-  ];
-  
-  let pdfPath = "";
-  for (const p of possiblePaths) {
-    if (fs.existsSync(p)) {
-      pdfPath = p;
-      break;
-    }
-  }
-
-  if (pdfPath) {
+  const pdfPath = path.join(process.cwd(), "assets", "Dharmesh_Ahir_Flutter_Resume.pdf");
+  if (fs.existsSync(pdfPath)) {
     res.setHeader("Content-Disposition", "attachment; filename=Dharmesh_Ahir_Flutter_Resume.pdf");
     res.setHeader("Content-Type", "application/pdf");
     return res.sendFile(pdfPath);
@@ -326,28 +329,26 @@ Generated Dynamically from Live Portfolio Backend Engine
   res.send(resumeText);
 });
 
-app.get(["/Resume.pdf", "/Dharmesh_Ahir_Flutter_Resume.pdf"], (req, res) => {
-  const possiblePaths = [
-    path.join(process.cwd(), "assets", "Dharmesh_Ahir_Flutter_Resume.pdf"),
-    path.join(process.cwd(), "assets", "Resume.pdf"),
-    path.join(process.cwd(), "assets", ".aistudio", "Dharmesh_Ahir_Flutter_Resume.pdf")
-  ];
-  let pdfPath = "";
-  for (const p of possiblePaths) {
-    if (fs.existsSync(p)) {
-      pdfPath = p;
-      break;
-    }
-  }
-  if (pdfPath) {
-    res.setHeader("Content-Disposition", "attachment; filename=Dharmesh_Ahir_Flutter_Resume.pdf");
-    res.setHeader("Content-Type", "application/pdf");
-    return res.sendFile(pdfPath);
-  }
-  res.status(404).send("Resume PDF asset not found");
-});
-
 async function runApplication() {
+  // Synchronize resume file to target folder for direct PDF download
+  try {
+    const srcPath = path.join(process.cwd(), "assets", "Dharmesh_Ahir_Flutter_Resume.pdf");
+    const destDir = path.join(process.cwd(), "assets", "resume");
+    const destPath = path.join(destDir, "Dharmesh_Ahir_Resume.pdf");
+    if (fs.existsSync(srcPath)) {
+      if (!fs.existsSync(destDir)) {
+        fs.mkdirSync(destDir, { recursive: true });
+      }
+      fs.copyFileSync(srcPath, destPath);
+      console.log("✔ Resume synced successfully to /assets/resume/Dharmesh_Ahir_Resume.pdf");
+    }
+  } catch (err) {
+    console.error("Failed to sync resume file:", err);
+  }
+
+  // Statically serve assets directory so that the browser can download files directly
+  app.use("/assets", express.static(path.join(process.cwd(), "assets")));
+
   // Vite integration in development, static build files in production module
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
