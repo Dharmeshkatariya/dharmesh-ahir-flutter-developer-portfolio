@@ -43,7 +43,8 @@ import {
   Search,
   Check,
   Mic,
-  Compass
+  Compass,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ThreeBackground } from './components/ThreeBackground';
@@ -52,11 +53,17 @@ import { TerminalHacker } from './components/TerminalHacker';
 import { DeveloperDashboardView } from './components/DeveloperDashboardView';
 import { AppleMinimalView } from './components/AppleMinimalView';
 import { FloatingCodeSystem } from './components/FloatingCodeSystem';
+import { ProjectArchitectureAccordion } from './components/ProjectArchitectureAccordion';
+import { SpotlightOverlay } from './components/SpotlightOverlay';
 import { InteractiveMagazineView } from './components/InteractiveMagazineView';
 import { FullscreenScrollStoryView } from './components/FullscreenScrollStoryView';
 import { CustomStudioEngine, defaultStudioConfig, StudioConfig, themePresets } from './components/CustomStudioEngine';
 import { CommandCenter } from './components/CommandCenter';
 import { EliteExtraHUD } from './components/EliteExtraHUD';
+import { PortfolioOSDashboard } from './components/PortfolioOSDashboard';
+import { GlobalLoadingOS } from './components/GlobalLoadingOS';
+import { GlintCard } from './components/GlintCard';
+import { WorkspaceSnapshot, SystemNotification, ActivityLogItem } from './types';
 
 // --- TYPES ---
 export type LayoutType =
@@ -469,6 +476,64 @@ export default function App() {
   }, [typedText, isDeleting, wordIdx, typeSpeed, typingSequence]);
 
   // --- STATE MATRIX ---
+  // --- PORTFOLIO OS CONFIGS ---
+  const [showOsPanel, setShowOsPanel] = useState<boolean>(false);
+  const [isEngineLoading, setIsEngineLoading] = useState<boolean>(() => {
+    if (typeof sessionStorage !== 'undefined') {
+      return sessionStorage.getItem('os_engine_booted_v1') !== 'true';
+    }
+    return true;
+  });
+
+  const [notifications, setNotifications] = useState<SystemNotification[]>(() => {
+    return [
+      {
+        id: 'boot-notif',
+        title: 'Portfolio OS Loaded',
+        message: 'Successfully mounted dynamic components. Welcome back to Dharmesh Ahir\'s high-performance laboratory.',
+        category: 'success',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
+    ];
+  });
+
+  const [activityLogs, setActivityLogs] = useState<ActivityLogItem[]>(() => {
+    return [
+      {
+        id: 'log-boot',
+        action: 'BOOT_SYSTEM',
+        details: 'Mounted dynamic background shader systems & initialized WebRTC channels.',
+        timestamp: new Date().toISOString(),
+        category: 'operational'
+      }
+    ];
+  });
+
+  const [showResumeSessionAlert, setShowResumeSessionAlert] = useState<boolean>(false);
+  const [lastSessionRecord, setLastSessionRecord] = useState<any>(null);
+
+  const addNotification = (title: string, message: string, category: 'info' | 'success' | 'warn' | 'system') => {
+    const newNotif: SystemNotification = {
+      id: `notif-${Date.now()}`,
+      title,
+      message,
+      category,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setNotifications((prev) => [newNotif, ...prev.slice(0, 49)]);
+  };
+
+  const addActivityLog = (action: string, details: string, category: 'workspace' | 'theme' | 'ai' | 'portfolio' | 'operational') => {
+    const newLog: ActivityLogItem = {
+      id: `log-${Date.now()}`,
+      action,
+      details,
+      timestamp: new Date().toISOString(),
+      category
+    };
+    setActivityLogs((prev) => [newLog, ...prev.slice(0, 99)]);
+  };
+
   const [studioConfig, setStudioConfigState] = useState<StudioConfig>(() => {
     return getLocalConfig<StudioConfig>('portfolio_studio_config_v5', defaultStudioConfig);
   });
@@ -489,6 +554,31 @@ export default function App() {
   const [mode, setModeState] = useState<ModeType>(() => getLocalConfig<ModeType>('portfolio_mode', 'developer'));
   const [cursorStyle, setCursorStyleState] = useState<CursorStyleType>(() => getLocalConfig<CursorStyleType>('portfolio_cursor', 'glass'));
   const [bgType, setBgTypeState] = useState<Background3DType>(() => getLocalConfig<Background3DType>('portfolio_bg', 'particles'));
+  const [threeDimensionMode, setThreeDimensionModeState] = useState<'auto' | 'enabled' | 'disabled'>(() => getLocalConfig<'auto' | 'enabled' | 'disabled'>('portfolio_three_d_mode', 'auto'));
+  const [isLowEndDeviceDetected, setIsLowEndDeviceDetected] = useState<boolean>(false);
+
+  const setThreeDimensionMode = (val: 'auto' | 'enabled' | 'disabled') => {
+    setThreeDimensionModeState(val);
+    localStorage.setItem('portfolio_three_d_mode', JSON.stringify(val));
+    addNotification('Environment Shift', `Adjusted 3D hardware canvas mode to ${val.toUpperCase()}`, 'info');
+    addActivityLog('ADJUST_ENVIRONMENT', `3D canvas mode switched to ${val}`, 'system');
+  };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const slowCpu = (navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4);
+      const slowGpu = (window.innerWidth < 768);
+      if (slowCpu || slowGpu) {
+        setIsLowEndDeviceDetected(true);
+        if (threeDimensionMode === 'auto') {
+          addNotification('Adaptive Engine Mode', 'Lower end system capabilities sensed. 3D engine scaled back to assure perfect viewport frames.', 'system');
+        }
+      }
+    }
+  }, [threeDimensionMode]);
+
+  const startThreeDActive = threeDimensionMode === 'enabled' || (threeDimensionMode === 'auto' && !isLowEndDeviceDetected);
+
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined' && !localStorage.getItem('init_theme_royal_dark_v5')) {
       return true;
@@ -509,14 +599,22 @@ export default function App() {
   // Workspace tabs
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<string>('hero');
 
+  // Resume Download Tracking States
+  const [cvDownloadState, setCvDownloadState] = useState<'idle' | 'downloading' | 'success'>('idle');
+  const [cvProgress, setCvProgress] = useState<number>(0);
+
   // Custom setters for persistence
   const setLayout = (val: LayoutType) => {
     localStorage.setItem('portfolio_layout', JSON.stringify(val));
     setLayoutState(val);
+    addActivityLog('UPDATE_LAYOUT', `Switched viewport perspective layout to: [${val}].`, 'workspace');
+    addNotification('Viewport Transformed', `Applied [${val}] skin representation successfully.`, 'info');
   };
   const setTheme = (val: ThemeType) => {
     localStorage.setItem('portfolio_theme', JSON.stringify(val));
     setThemeState(val);
+    addActivityLog('UPDATE_THEME', `Color spectral atmosphere re-aligned to [${val}].`, 'theme');
+    addNotification('Atmosphere Shifted', `Selected [${val}] theme colors schema successfully.`, 'success');
 
     const mapping: { [key: string]: string } = {
       'cyberpunk-neon': 'cyberpunk',
@@ -595,16 +693,12 @@ export default function App() {
   const [aiLayoutMode, setAiLayoutMode] = useState<'orb' | 'bubble' | 'dock' | 'sidebar'>('bubble');
   const [isCmdPaletteOpen, setIsCmdPaletteOpen] = useState<boolean>(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  
-  // Animated download progress systems
-  const [downloadState, setDownloadState] = useState<'idle' | 'downloading' | 'success'>('idle');
-  const [downloadProgress, setDownloadProgress] = useState<number>(0);
-  const [downloadLog, setDownloadLog] = useState<string[]>([]);
 
   // Assistant Chat States
   const [aiHistory, setAiHistory] = useState<ChatMessage[]>([]);
   const [aiInput, setAiInput] = useState<string>('');
   const [aiTyping, setAiTyping] = useState<boolean>(false);
+  const [aiPresence, setAiPresence] = useState<'listening' | 'reasoning' | 'searching' | 'memory recall' | 'generating' | 'ready'>('ready');
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
   const [isListening, setIsListening] = useState<boolean>(false);
   const [isAiMaximized, setIsAiMaximized] = useState<boolean>(false);
@@ -630,6 +724,41 @@ export default function App() {
       window.removeEventListener('toggle_config_studio', handleToggleSettings);
     };
   }, []);
+
+  // --- PORTFOLIO OS SESSIONS MEMORY MATRIX ---
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const storedRecord = localStorage.getItem('portfolio_last_sessions_v1');
+        if (storedRecord) {
+          const record = JSON.parse(storedRecord);
+          if (record.layout && record.theme && record.mode) {
+            // Only fire memory recovery challenge if it matches non-trivial settings
+            if (record.layout !== 'classic' || record.theme !== 'purple' || record.mode !== 'developer') {
+              setLastSessionRecord(record);
+              setShowResumeSessionAlert(true);
+              setTimeout(() => {
+                try { playBeep(523, 0.12); } catch (_) {}
+              }, 1200);
+            }
+          }
+        }
+      } catch (_) {}
+    }
+  }, []);
+
+  // Sync state tracking changes for session memory
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const record = {
+        layout,
+        theme,
+        mode,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('portfolio_last_sessions_v1', JSON.stringify(record));
+    }
+  }, [layout, theme, mode]);
 
   // Command Palette Search State
   const [cmdSearchQuery, setCmdSearchQuery] = useState<string>('');
@@ -785,6 +914,7 @@ export default function App() {
 
   // HTML5 Canvas Ref
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const thoughtTimersRef = useRef<{ [key: string]: any }>({});
 
   // Welcome chat initialisation
   useEffect(() => {
@@ -1046,73 +1176,51 @@ export default function App() {
   };
 
   const printCV = () => {
-    if (downloadState === 'downloading') return;
+    if (cvDownloadState !== 'idle') return;
     playBeep(220, 0.1);
-    setDownloadState('downloading');
-    setDownloadProgress(0);
-    setDownloadLog(['>> Connecting to secure PDF compilation service...']);
+    setCvDownloadState('downloading');
+    setCvProgress(0);
     
-    const logs = [
-      '>> [00:00.05] Init PDF compiler engine... [OK]',
-      '>> [00:00.20] Resolving profile parameters from db.json...',
-      '>> [00:00.45] Compiling Helix Care case study telemetry...',
-      '>> [00:00.70] Assembling offline-first BLoC & SQLite structures...',
-      '>> [00:00.95] Linking verified developer credentials...',
-      '>> [00:01.20] Encoding document layout to PDF/A spec...',
-      '>> [00:01.35] Stream packaging & compression complete... [82.8KB]',
-      '>> [00:01.50] Dispatching download payload to client agent...'
-    ];
+    // Broadcast initial download event to notifications & telemetry
+    addNotification('PDF Download Initiated', 'Retrieving Dharmesh_Ahir_Resume.pdf from static storage assets...', 'info');
+    addActivityLog('CV_DOWNLOAD_START', 'Secure direct byte fetch triggered for Dharmesh_Ahir_Resume.pdf', 'user');
 
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.floor(Math.random() * 12) + 6;
-      if (progress >= 100) {
-        progress = 100;
-        setDownloadProgress(100);
-        setDownloadLog((prev) => [...prev, logs[logs.length - 1], '>> File download initiated. Enjoy!']);
-        clearInterval(interval);
-        setDownloadState('success');
+    // Simulate interactive micro-ticks with status pulse
+    let currentPrg = 0;
+    const intervalRef = setInterval(() => {
+      currentPrg += 10;
+      setCvProgress(currentPrg);
+      
+      // Trigger tick sound
+      playBeep(300 + currentPrg * 4, 0.02);
+      
+      if (currentPrg >= 100) {
+        clearInterval(intervalRef);
         
-        playBeep(580, 0.08);
-        setTimeout(() => playBeep(880, 0.15), 80);
-
-        // Initiate direct download
+        // Directly download the static PDF from physical storage paths as specified
         const link = document.createElement('a');
-        link.href = '/api/cv/download';
-        link.setAttribute('download', profile.cvFilename || 'Dharmesh_Ahir_Flutter_Resume.pdf');
+        link.href = '/assets/resume/Dharmesh_Ahir_Resume.pdf';
+        link.download = 'Dharmesh_Ahir_Resume.pdf';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-
-        setTimeout(() => {
-          setDownloadState('idle');
-          setDownloadProgress(0);
-        }, 2200);
-      } else {
-        setDownloadProgress(progress);
         
-        // Push log entries based on progress milestone
-        const logIndex = Math.floor((progress / 100) * (logs.length - 1));
-        setDownloadLog((prev) => {
-          const nextLog = logs[logIndex];
-          if (!prev.includes(nextLog)) {
-            return [...prev, nextLog];
-          }
-          return prev;
-        });
+        // Transition to success state
+        setCvDownloadState('success');
+        playBeep(880, 0.2);
+        
+        // Success toasts and logging telemetry as requested
+        addNotification('CV Direct Delivery Complete', 'Dharmesh_Ahir_Resume.pdf successfully downloaded to regional local storage.', 'success');
+        addActivityLog('CV_DOWNLOAD_SUCCESS', 'Transmission secure. Received 100% of PDF byte array stream over local proxy lanes.', 'system');
 
-        playBeep(400 + progress * 2.5, 0.025);
+        // Reset state after show concludes
+        setTimeout(() => {
+          setCvDownloadState('idle');
+          setCvProgress(0);
+        }, 3000);
       }
-    }, 150);
+    }, 120);
   };
-
-  useEffect(() => {
-    const handleDownloadRequest = () => {
-      printCV();
-    };
-    window.addEventListener('trigger_cv_download', handleDownloadRequest);
-    return () => window.removeEventListener('trigger_cv_download', handleDownloadRequest);
-  }, [profile, downloadState]);
 
   const copyEmailToClipboard = () => {
     navigator.clipboard.writeText(profile.email || 'katariyadharmesh658@gmail.com');
@@ -1141,6 +1249,17 @@ export default function App() {
     const messageToSend = overrideMsg || aiInput;
     if (!messageToSend.trim()) return;
 
+    // Reset and initiate multi-layered AI thought cycle animation parameters
+    setAiPresence('reasoning');
+    if (thoughtTimersRef.current) {
+      Object.values(thoughtTimersRef.current).forEach(clearTimeout);
+      thoughtTimersRef.current = {};
+    }
+    
+    thoughtTimersRef.current.t1 = setTimeout(() => setAiPresence('searching'), 450);
+    thoughtTimersRef.current.t2 = setTimeout(() => setAiPresence('memory recall'), 1100);
+    thoughtTimersRef.current.t3 = setTimeout(() => setAiPresence('generating'), 1900);
+
     // Add user message to history
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -1156,6 +1275,22 @@ export default function App() {
 
     // AI Portfolio Agent - Client-Side Action Interceptor
     const query = messageToSend.toLowerCase();
+    
+    // Adaptive Layout Intelligence - Recruiter Presence Detection
+    if (query.includes('hire') || query.includes('recruit') || query.includes('job') || query.includes('interview') || query.includes('salary')) {
+      if (mode !== 'recruiter') {
+        setTimeout(() => {
+          try {
+            addNotification('Adaptive Intelligence', 'Detected recruiter presence. Automatic switch to Recruiter Focus Workspace applied.', 'system');
+            setMode('recruiter');
+            setLayout('classic'); 
+            addActivityLog('ADAPTIVE_TRIGGER', 'Automating parameters preset to match Recruiter expectations.', 'workspace');
+            playBeep(987, 0.1);
+          } catch (_) {}
+        }, 800);
+      }
+    }
+
     let actionExecuted = false;
     let agentFeedback = '';
 
@@ -1182,10 +1317,10 @@ export default function App() {
       setAiMemory((prev) => Array.from(new Set([...prev, 'Active Theme: Tesla Black'])));
     } else if (query.includes('founder') || query.includes('pitch') || query.includes('cto')) {
       setTheme('sunset');
-      setLayout('startup-founder');
+      setLayout('glassmorphism-studio');
       setBgType('galaxy');
       actionExecuted = true;
-      agentFeedback = "🚀 **CTO / Pitch Mode** initialized instantly! Presenting structural startup components, WebRTC streaming consultation layers, and funding pitches analytics dashboards.";
+      agentFeedback = "🚀 **CTO / Pitch Mode** initialized instantly! Presenting structural startup components, WebRTC streaming consultation layers, and funding pitches analytics dashboards.\n\n[FOUNDER_SUMMARY_CARD]";
       setAiMemory((prev) => Array.from(new Set([...prev, 'Active Mode: Startup Founder'])));
     } else if (query.includes('developer') || query.includes('workspace')) {
       setTheme('tesla-black');
@@ -1193,7 +1328,7 @@ export default function App() {
       setCursorStyle('terminal');
       setBgType('cubes');
       actionExecuted = true;
-      agentFeedback = "💻 **Developer Workspace** fully configured! Custom terminal commands console, active thread analyzers, and interactive sandboxes now online.";
+      agentFeedback = "💻 **Developer Workspace** fully configured! Custom terminal commands console, active thread analyzers, and interactive sandboxes now online.\n\n[ARCH_REVIEW_CARD]";
       setAiMemory((prev) => Array.from(new Set([...prev, 'Active Mode: Developer Workspace'])));
     } else if (query.includes('recruiter') || query.includes('hire') || query.includes('job') || query.includes('work')) {
       setTheme('apple-white');
@@ -1201,14 +1336,14 @@ export default function App() {
       setCursorStyle('apple');
       setBgType('particles');
       actionExecuted = true;
-      agentFeedback = "👔 **Recruiter Focus Dashboard** fully configured! Critical performance stats, structured timeline blocks, and direct quick-contact actions laid out cleanly.";
+      agentFeedback = "👔 **Recruiter Focus Dashboard** fully configured! Critical performance stats, structured timeline blocks, and direct quick-contact actions laid out cleanly.\n\n[RECRUITER_SUMMARY_CARD]";
       setAiMemory((prev) => Array.from(new Set([...prev, 'Active Mode: Recruiter Focus'])));
     } else if (query.includes('cv') || query.includes('resume') || query.includes('download')) {
       const link = document.createElement('a');
       link.href = '#cv-direct';
       link.click();
       actionExecuted = true;
-      agentFeedback = "📁 Initiated premium **Resume (PDF)** download successfully! The system has compiled and generated a modern print-ready portfolio summary.";
+      agentFeedback = "📁 Initiated premium **Resume (PDF)** download successfully! The system has compiled and generated a modern print-ready portfolio summary.\n\n[RECRUITER_SUMMARY_CARD]";
       setAiMemory((prev) => Array.from(new Set([...prev, 'Document Triggered: Resume PDF'])));
     } else if (query.includes('project') || query.includes('show') || query.includes('case')) {
       if (query.includes('helix') || query.includes('doctor') || query.includes('care') || query.includes('health') || query.includes('tele')) {
@@ -1233,6 +1368,12 @@ export default function App() {
     }
 
     const startStreaming = (responseRawText: string) => {
+      if (thoughtTimersRef.current) {
+        Object.values(thoughtTimersRef.current).forEach(clearTimeout);
+        thoughtTimersRef.current = {};
+      }
+      setAiPresence('generating');
+
       let accum = '';
       const words = responseRawText.split(' ');
       let currentWordIdx = 0;
@@ -1257,6 +1398,7 @@ export default function App() {
           currentWordIdx++;
         } else {
           clearInterval(streamTimer);
+          setAiPresence('ready');
           playBeep(660, 0.12);
         }
       }, 30);
@@ -1276,6 +1418,13 @@ export default function App() {
         body: JSON.stringify({
           message: messageToSend,
           history: aiHistory,
+          workspaceContext: {
+            layout,
+            theme,
+            mode,
+            selectedProject: selectedProject ? selectedProject.title : 'None',
+            activeTab: activeWorkspaceTab
+          }
         }),
       });
 
@@ -1286,6 +1435,10 @@ export default function App() {
 
       const rawTextResponse = data.text || 'I apologize, I could not parse your response context.';
       startStreaming(rawTextResponse);
+
+      // Log activity state
+      addActivityLog('AI_CHAT_ASSIST', `Synced dialogue query: "${messageToSend.substring(0, 32)}..."`, 'ai');
+      addNotification('AI Synced Workspace', 'Representative formulated query response with active telemetry awareness.', 'system');
 
       // Unlock AI communication badge
       setBadges((prev) =>
@@ -1305,6 +1458,11 @@ export default function App() {
       playBeep(180, 0.3);
     } finally {
       setAiTyping(false);
+      if (thoughtTimersRef.current) {
+        Object.values(thoughtTimersRef.current).forEach(clearTimeout);
+        thoughtTimersRef.current = {};
+      }
+      setAiPresence('ready');
     }
   };
 
@@ -1510,11 +1668,55 @@ export default function App() {
     }
   };
 
+  if (isEngineLoading) {
+    return (
+      <GlobalLoadingOS
+        onComplete={() => {
+          setIsEngineLoading(false);
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('os_engine_booted_v1', 'true');
+          }
+        }}
+        playBeep={playBeep}
+      />
+    );
+  }
+
   return (
-    <div className={`transition-all duration-700 min-h-screen relative text-glow-none ${getThemeClass()} ${isDarkMode ? 'dark' : 'light-mode'} ${isAiOpen && aiLayoutMode === 'sidebar' && !isAiMaximized ? 'lg:pr-[380px] xl:pr-[440px]' : ''}`}>
+    <div className={`transition-all duration-700 min-h-screen relative text-glow-none ${getThemeClass()} ${isDarkMode ? 'dark' : 'light-mode'}`}>
       
       {/* PERFORMANCE CANVAS FOR 3D PARTICLES / GRID UNIVERSE */}
-      <ThreeBackground bgType={bgType} theme={theme} mousePos={mousePos} mouseRelative={mouseRelative} customConfig={studioConfig} />
+      {startThreeDActive ? (
+        <ThreeBackground bgType={bgType} theme={theme} mousePos={mousePos} mouseRelative={mouseRelative} customConfig={studioConfig} />
+      ) : (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 bg-neutral-950">
+          {/* Elegant premium ambient gradients & Aurora effects */}
+          <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-500/10 blur-[140px] animate-pulse" style={{ animationDuration: '14s' }} />
+          <div className="absolute bottom-[-10%] right-[-15%] w-[70%] h-[70%] rounded-full bg-cyan-500/10 blur-[160px] animate-pulse" style={{ animationDuration: '20s' }} />
+          <div className="absolute top-[30%] right-[10%] w-[45%] h-[45%] rounded-full bg-[var(--accent)]/5 blur-[120px] animate-pulse" style={{ animationDuration: '10s' }} />
+          
+          {/* Subtle light rays */}
+          <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white via-indigo-900 to-transparent pointer-events-none" />
+          
+          {/* Elegant ambient particles moving */}
+          <div className="absolute inset-0 opacity-[0.15]">
+            <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="particle-glow-2" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="white" stopOpacity="0.8" />
+                  <stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                </radialGradient>
+              </defs>
+              <circle cx="15%" cy="25%" r="3" fill="url(#particle-glow-2)" className="animate-pulse" style={{ animationDuration: '4s' }} />
+              <circle cx="45%" cy="12%" r="2" fill="url(#particle-glow-2)" className="animate-pulse" style={{ animationDuration: '6s' }} />
+              <circle cx="75%" cy="38%" r="4" fill="url(#particle-glow-2)" className="animate-pulse" style={{ animationDuration: '5s' }} />
+              <circle cx="85%" cy="85%" r="1.5" fill="url(#particle-glow-2)" className="animate-pulse" style={{ animationDuration: '8s' }} />
+              <circle cx="25%" cy="70%" r="3.5" fill="url(#particle-glow-2)" className="animate-pulse" style={{ animationDuration: '7s' }} />
+              <circle cx="60%" cy="65%" r="2" fill="url(#particle-glow-2)" className="animate-pulse" style={{ animationDuration: '4.5s' }} />
+            </svg>
+          </div>
+        </div>
+      )}
       <canvas ref={canvasRef} className="hidden" />
 
       {/* ADVANCED CUSTOM INTEGRAL CURSOR ENGINE */}
@@ -1537,6 +1739,93 @@ export default function App() {
 
       {/* ADDITIONAL ELITE PREMIUM OVERLAY LAYERS & FLOATING HUD WIDGETS */}
       <EliteExtraHUD profile={profile} socials={socials} />
+
+      {/* PORTFOLIO OS CONTROL PANEL */}
+      <PortfolioOSDashboard
+        isOpen={showOsPanel}
+        onClose={() => setShowOsPanel(false)}
+        currentLayout={layout}
+        onLayoutChange={setLayout}
+        currentTheme={theme}
+        onThemeChange={setTheme}
+        currentCursorStyle={cursorStyle}
+        onCursorStyleChange={setCursorStyle}
+        isMuted={isMuted}
+        onMuteToggle={setIsMuted}
+        motionIntensity={motionIntensity}
+        onMotionIntensityChange={setMotionIntensity}
+        glowIntensity={glowIntensity}
+        onGlowIntensityChange={setGlowIntensity}
+        particleDensity={particleDensity}
+        onParticleDensityChange={setParticleDensity}
+        notifications={notifications}
+        activityLogs={activityLogs}
+        onTriggerNotification={addNotification}
+        onAddActivityLog={addActivityLog}
+        onChatPrompt={(q) => {
+          setIsAiOpen(true);
+          setAiInput(q);
+        }}
+        playBeep={playBeep}
+      />
+
+      {/* WELCOME BACK SESSIONS POPUP */}
+      <AnimatePresence>
+        {showResumeSessionAlert && lastSessionRecord && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, x: 50 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="fixed bottom-24 right-6 z-[2600] max-w-sm border border-emerald-500/30 bg-[#070c19]/95 text-slate-100 p-5 rounded-2xl shadow-2xl backdrop-blur-2xl"
+          >
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="p-1 px-2.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[8.5px] uppercase font-mono font-black rounded-lg leading-none">
+                  MEMORY SYNC
+                </div>
+                <span className="text-xs font-bold text-white tracking-tight uppercase">Session Memory Detected</span>
+              </div>
+              
+              <p className="text-[10px] text-slate-400 leading-relaxed font-sans">
+                A saved preference matrix was recovered from your previous turn:
+                <span className="block mt-2 pl-2 border-l-2 border-[#00ffcc] text-white font-mono text-[9px] leading-relaxed">
+                  • Layout perspective: <span className="text-[var(--accent)] uppercase font-bold">{lastSessionRecord.layout}</span><br />
+                  • Color scheme spectrum: <span className="text-[var(--accent)] uppercase font-bold">{lastSessionRecord.theme}</span><br />
+                  • Active profile mode: <span className="text-[var(--accent)] uppercase font-bold">{lastSessionRecord.mode}</span>
+                </span>
+              </p>
+
+              <div className="flex gap-2 text-[9px] font-mono font-black uppercase text-center">
+                <button
+                  onClick={() => {
+                    setLayout(lastSessionRecord.layout);
+                    setTheme(lastSessionRecord.theme);
+                    setMode(lastSessionRecord.mode);
+                    setShowResumeSessionAlert(false);
+                    try { playBeep(880, 0.15); } catch (_) {}
+                    addNotification('Session Recovered', 'Successfully synced preference variables from your last turn!', 'success');
+                  }}
+                  className="flex-grow py-2.5 bg-[#00ffcc] hover:bg-white text-slate-950 rounded-xl transition-all font-extrabold cursor-pointer"
+                >
+                  RESUME SESSION
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setShowResumeSessionAlert(false);
+                    localStorage.removeItem('portfolio_last_sessions_v1');
+                    try { playBeep(220, 0.12); } catch (_) {}
+                    addNotification('Session Dismissed', 'Reset local session trace to system presets layout.', 'warn');
+                  }}
+                  className="py-2.5 px-3 border border-white/10 hover:bg-white/5 text-neutral-400 hover:text-white rounded-xl transition-all cursor-pointer"
+                >
+                  DISMISS
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* AMBIENT GLOW CHANNELS */}
       <div className="fixed inset-0 -z-20 pointer-events-none overflow-hidden" style={{ opacity: glowIntensity / 100 }}>
@@ -1574,7 +1863,7 @@ export default function App() {
             </div>
           </nav>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button
               id="download-cv-btn"
               onClick={printCV}
@@ -1608,9 +1897,15 @@ export default function App() {
         </div>
       </header>
 
-      {/* LOCALIZED MULTI-LAYOUT DISPATCHER CHANNELS */}
+      {/* LOCALIZED MULTI-LAYOUT DISPATCHER CHANNELS WITH LUXURY SPRING TRANSTIONS */}
       {(!['classic', 'glassmorphism-studio'].includes(layout)) ? (
-        <div className="pt-6 pb-24">
+        <motion.div 
+          key={layout}
+          initial={{ opacity: 0, filter: 'blur(10px)', y: 8 }}
+          animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
+          transition={{ duration: 0.38, ease: 'easeOut' }}
+          className="pt-6 pb-24"
+        >
           {layout === 'terminal-hacker' && (
             <div className="max-w-4xl mx-auto px-6 py-12">
               <div className="mb-6 flex justify-between items-center bg-black/40 border border-emerald-500/20 p-4 rounded-2xl font-mono">
@@ -2008,7 +2303,7 @@ export default function App() {
               />
             </div>
           )}
-        </div>
+        </motion.div>
       ) : (
         <>
           {/* --- HERO NARRATIVE PANEL --- */}
@@ -2073,38 +2368,121 @@ export default function App() {
                   )}
 
                   {mode === 'recruiter' && (
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-black tracking-wider uppercase text-[var(--accent)] flex items-center gap-2"><Award className="w-4 h-4" /> Recruiter Key metrics</h4>
-                      <p className={`text-xs ${isDarkMode ? 'text-white/70' : 'text-slate-600'}`}>Dharmesh brings over 3 years of fully verified deployment records across multi-tier setups.</p>
-                      <div className="grid grid-cols-2 gap-4 pt-1">
-                        <div className={`border p-2 rounded-lg text-center ${isDarkMode ? 'bg-black/20 border-white/10' : 'bg-slate-100/50 border-slate-200'}`}>
-                          <div className={`text-sm font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Surat, Gujarat</div>
-                          <div className={`text-[9px] ${isDarkMode ? 'text-white/50' : 'text-slate-500'}`}>Active location</div>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between pb-1 border-b border-white/[0.06]">
+                        <h4 className="text-xs font-black tracking-wider uppercase text-[var(--accent)] flex items-center gap-2">
+                          <UserCheck className="w-4 h-4 text-emerald-400" /> Executive summary & Hiring Index
+                        </h4>
+                        <span className="text-[8px] px-1.5 py-0.5 bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 font-mono rounded font-black animate-pulse">● CONTRACT SIGNING ACTIVE</span>
+                      </div>
+
+                      {/* Recruiter executive summary keynote card */}
+                      <div className={`p-4 rounded-xl border relative overflow-hidden bg-black/50 border-white/[0.08]`}>
+                        <div className="absolute top-0 right-0 w-8 h-8 pointer-events-none border-t border-r border-[var(--accent)]/30 rounded-tr-xl" />
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[12px] font-extrabold text-white">Dharmesh Ahir (Lead Flutter Architect)</span>
+                            <span className="text-[8px] font-mono text-neutral-400">3+ Yrs Commercial</span>
+                          </div>
+                          <p className="text-[10px] text-neutral-400 leading-relaxed font-sans">
+                            Specializes in high performance rendering, low-latency WebRTC streams, offline sync databases, and multi-threaded backgrounds isolate design. Perfect fit for senior mobile roles or complex multi-tier integrations.
+                          </p>
+                          <div className="pt-2 flex flex-wrap items-center gap-3">
+                            <button 
+                              onClick={printCV}
+                              className="px-3 py-1.5 bg-[var(--accent)] text-black font-mono text-[9px] font-black uppercase rounded-lg hover:bg-white transition-all flex items-center gap-1 shadow-md cursor-pointer"
+                            >
+                              <Download className="w-3 h-3" /> EXPORT FULL DOSSIER (PDF)
+                            </button>
+                            <button 
+                              onClick={() => {
+                                setIsAiOpen(true);
+                                triggerAIPortfolioQuery("Please formulate a tailored Candidate Dossier Report for me. Break this evaluation down into four distinct strategic layers: 1. Executive Summary 2. Tech Stack & Architecture Core (Flutter, Dart, Hive, SQLite) 3. Deliverability & Communication leadership 4. Startup Agility & Rapid MVPs scaling. Render with precise and highly professional markdown.");
+                              }}
+                              className="px-3 py-1.5 border border-emerald-500/40 bg-emerald-950/25 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 font-mono text-[9px] font-black uppercase rounded-lg transition-all flex items-center gap-1 shadow-md cursor-pointer"
+                            >
+                              <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse" /> SUMMARIZE CANDIDATE (AI)
+                            </button>
+                            <span className="text-[9px] font-mono text-neutral-500">25+ Case Studies Deployed</span>
+                          </div>
                         </div>
-                        <div className={`border p-2 rounded-lg text-center ${isDarkMode ? 'bg-black/20 border-white/10' : 'bg-slate-100/50 border-slate-200'}`}>
-                          <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">Immediate</div>
-                          <div className={`text-[9px] ${isDarkMode ? 'text-white/50' : 'text-slate-500'}`}>Contract / Full availability</div>
+                      </div>
+
+                      {/* Hiring readiness grid metrics */}
+                      <span className="text-[9px] font-mono uppercase text-white/40 block tracking-widest pt-1">// REAL-TIME CANDIDATE PARAMETERS</span>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <div className="p-2.5 rounded-lg border border-white/5 bg-neutral-950/70">
+                          <span className="text-[8px] uppercase tracking-wider text-neutral-500 font-mono block">Availability</span>
+                          <span className="text-[10.5px] font-bold text-emerald-400 block mt-0.5">Immediate (Direct)</span>
+                        </div>
+                        <div className="p-2.5 rounded-lg border border-white/5 bg-neutral-950/70">
+                          <span className="text-[8px] uppercase tracking-wider text-neutral-500 font-mono block">Weekly Capacity</span>
+                          <span className="text-[10.5px] font-bold text-white block mt-0.5">Max 38 hr / Week</span>
+                        </div>
+                        <div className="p-2.5 rounded-lg border border-white/5 bg-neutral-950/70 col-span-2 md:col-span-1">
+                          <span className="text-[8px] uppercase tracking-wider text-neutral-500 font-mono block">Timezone Alignment</span>
+                          <span className="text-[10.5px] font-bold text-cyan-400 block mt-0.5">EST / GMT Overlap</span>
+                        </div>
+                        <div className="p-2.5 rounded-lg border border-white/5 bg-neutral-950/70">
+                          <span className="text-[8px] uppercase tracking-wider text-neutral-500 font-mono block">Contract Classes</span>
+                          <span className="text-[10px] font-bold text-white block mt-0.5">C2C, W2, Independent</span>
+                        </div>
+                        <div className="p-2.5 rounded-lg border border-white/5 bg-neutral-950/70">
+                          <span className="text-[8px] uppercase tracking-wider text-neutral-500 font-mono block">Response Latency</span>
+                          <span className="text-[10.5px] font-bold text-purple-400 block mt-0.5">&lt; 3 Hours Verified</span>
+                        </div>
+                        <div className="p-2.5 rounded-lg border border-white/5 bg-neutral-950/70 col-span-2 md:col-span-1">
+                          <span className="text-[8px] uppercase tracking-wider text-neutral-500 font-mono block">Preferred Roles</span>
+                          <span className="text-[9px] font-bold text-yellow-400 block mt-0.5 truncate">Lead Flutter Architect</span>
                         </div>
                       </div>
                     </div>
                   )}
 
                   {mode === 'founder' && (
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-black tracking-wider uppercase text-[var(--accent)] flex items-center gap-2"><DollarSign className="w-4 h-4" /> Business Revenue Performance</h4>
-                      <p className={`text-xs ${isDarkMode ? 'text-white/70' : 'text-slate-600'}`}>Focusing on high downloads growth, transaction retention indices and robust cost management integrations.</p>
-                      <div className="grid grid-cols-3 gap-2 pt-1 text-center">
-                        <div className={`border p-1.5 rounded-lg ${isDarkMode ? 'border-white/10' : 'border-slate-200 bg-slate-50'}`}>
-                          <div className="text-sm font-black text-[var(--accent)]">50,000+</div>
-                          <div className="text-[8px] text-slate-500 font-bold uppercase">Downloads</div>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between pb-1 border-b border-white/[0.06]">
+                        <h4 className="text-xs font-black tracking-wider uppercase text-[var(--accent)] flex items-center gap-2">
+                          <DollarSign className="w-4 h-4 text-emerald-400" /> STARTUP BUSINESS VALUE INDEX
+                        </h4>
+                        <span className="text-[8px] px-1.5 py-0.5 bg-yellow-950/40 border border-yellow-500/20 text-yellow-400 font-mono rounded font-black">● FRACTIONAL CTO ELIGIBLE</span>
+                      </div>
+
+                      <p className={`text-xs ${isDarkMode ? 'text-white/70' : 'text-slate-600'} leading-relaxed`}>
+                        Building early products requires fast shipping times, zero rewrites, and high cost efficiency. Dharmesh brings pre-built production architecture setups that accelerate project lifecycle indexes immediately.
+                      </p>
+
+                      {/* Founder mode metrics table */}
+                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div className="bg-neutral-950/80 p-3 rounded-xl border border-white/5">
+                          <span className="text-[8px] font-mono text-neutral-500 block uppercase">Product Launch Cycle</span>
+                          <span className="text-xs font-black text-[var(--accent)] block mt-0.5">2X Faster Store Delivery</span>
+                          <span className="text-[7.5px] text-emerald-400 font-mono select-none">▲ Verified by 25+ deploys</span>
                         </div>
-                        <div className={`border p-1.5 rounded-lg ${isDarkMode ? 'border-white/10' : 'border-slate-200 bg-slate-50'}`}>
-                          <div className="text-sm font-black text-[var(--accent)]">99.9%</div>
-                          <div className="text-[8px] text-slate-500 font-bold uppercase">Uptime</div>
+
+                        <div className="bg-neutral-950/80 p-3 rounded-xl border border-white/5">
+                          <span className="text-[8px] font-mono text-neutral-500 block uppercase">Arch Rewrite Overhead</span>
+                          <span className="text-xs font-black text-rose-400 block mt-0.5">0.0% Structural Lag</span>
+                          <span className="text-[7.5px] text-neutral-500 font-mono select-none">Decoupled Repository setup</span>
                         </div>
-                        <div className={`border p-1.5 rounded-lg ${isDarkMode ? 'border-white/10' : 'border-slate-200 bg-slate-50'}`}>
-                          <div className="text-sm font-black text-[var(--accent)]">&lt;2 days</div>
-                          <div className="text-[8px] text-slate-500 font-bold uppercase">Store Cycle</div>
+
+                        <div className="bg-neutral-950/80 p-3 rounded-xl border border-white/5 col-span-2 lg:col-span-1">
+                          <span className="text-[8px] font-mono text-neutral-500 block uppercase">Developer Time Saved</span>
+                          <span className="text-xs font-black text-cyan-400 block mt-0.5">120+ Hrs Boilerplate</span>
+                          <span className="text-[7.5px] text-[#00ffcc] font-mono select-none">Ready-to-use isolate templates</span>
+                        </div>
+
+                        <div className="bg-neutral-950/80 p-3 rounded-xl border border-white/5">
+                          <span className="text-[8px] font-mono text-neutral-500 block uppercase">Threading Security</span>
+                          <span className="text-xs font-black text-white block mt-0.5">99.9% Uptime SLA</span>
+                          <span className="text-[7.5px] text-neutral-500 font-mono select-none">SQLite thread conflict blocks</span>
+                        </div>
+
+                        <div className="bg-neutral-950/80 p-3 rounded-xl border border-white/5 col-span-2 lg:col-span-2 flex flex-col justify-center">
+                          <span className="text-[8px] font-mono text-neutral-400 uppercase tracking-widest block font-bold">// ADVISORY CAPABILITIES</span>
+                          <p className="text-[9.5px] text-neutral-400 mt-1">
+                            Available for fractional Chief Technology Officer representation, security auditing, and system architecture planning.
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -2889,6 +3267,26 @@ export default function App() {
               </div>
             </div>
 
+            {/* 3D Environment Controller */}
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold text-white/50 uppercase block">3D Environment Controller</span>
+              <div className="grid grid-cols-3 gap-1">
+                {[
+                  { id: 'auto', label: '🛡️ Auto' },
+                  { id: 'enabled', label: '✨ Enabled' },
+                  { id: 'disabled', label: '💤 Disabled' }
+                ].map((modeOption) => (
+                  <button
+                    key={modeOption.id}
+                    onClick={() => { setThreeDimensionMode(modeOption.id as 'auto' | 'enabled' | 'disabled'); playBeep(220, 0.1); }}
+                    className={`py-1.5 text-[8px] uppercase tracking-widest text-center rounded-lg border transition-all ${threeDimensionMode === modeOption.id ? 'bg-[var(--accent)]/15 text-[var(--accent)] border-[var(--accent)] font-extrabold' : 'bg-black/30 text-white/70 border-white/10'}`}
+                  >
+                    {modeOption.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Custom 3D backgrounds Option Switcher */}
             <div className="space-y-2">
               <span className="text-[10px] font-bold text-white/50 uppercase block">3D Canvas Universe</span>
@@ -3067,9 +3465,25 @@ export default function App() {
                   </div>
                   <div>
                     <h3 className="text-xs font-black uppercase text-white tracking-widest">Dharmesh AI Copilot</h3>
-                    <span className="text-[8px] uppercase tracking-wider text-emerald-400 font-bold flex items-center gap-1">
-                      <span className="w-1 h-1 rounded-full bg-emerald-400" />
-                      Companion Session Active
+                    <span className={`text-[8.5px] font-mono uppercase tracking-widest font-black flex items-center gap-1.5 transition-colors duration-350 ${
+                      aiPresence === 'reasoning' ? 'text-fuchsia-400' :
+                      aiPresence === 'searching' ? 'text-teal-400' :
+                      aiPresence === 'memory recall' ? 'text-indigo-400' :
+                      aiPresence === 'generating' ? 'text-yellow-400' :
+                      'text-emerald-400 animate-pulse'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full transition-all duration-350 ${
+                        aiPresence === 'reasoning' ? 'bg-fuchsia-400 animate-pulse' :
+                        aiPresence === 'searching' ? 'bg-teal-400 animate-[spin_1.5s_linear_infinite]' :
+                        aiPresence === 'memory recall' ? 'bg-indigo-400' :
+                        aiPresence === 'generating' ? 'bg-yellow-400 animate-ping' :
+                        'bg-emerald-400 animate-pulse'
+                      }`} />
+                      {aiPresence === 'reasoning' && '🧠 SYSTEM COGNITIVE REASONING'}
+                      {aiPresence === 'searching' && '⚡ CACHE & SYNAPSE SEARCHING'}
+                      {aiPresence === 'memory recall' && '💾 RECALLING ASSOCIATIVE MEMORY'}
+                      {aiPresence === 'generating' && '✍️ GENERATING SYNTHESIZED ARRAY'}
+                      {aiPresence === 'ready' && '🌐 COMPANION STATION READY'}
                     </span>
                   </div>
                 </div>
@@ -3136,34 +3550,326 @@ export default function App() {
             </div>
 
             {/* Chat history representation */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 font-sans bg-black/5">
-              {aiHistory.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-full text-center space-y-3.5 max-w-sm mx-auto">
-                  <div className="w-9 h-9 rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/30 flex items-center justify-center text-[var(--accent)] text-lg animate-pulse">
-                    🤖
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans bg-black/5 custom-scrollbar">
+              {aiHistory.length <= 1 && (
+                <div className="flex flex-col items-center justify-center py-5 text-center space-y-6 max-w-sm mx-auto select-none">
+                  
+                  {/* PROCESSING RINGS, ORBIT NODES & NEURAL ORB SYNC */}
+                  <div className="relative w-24 h-24 flex items-center justify-center">
+                    {/* Ring 1 - Spinning mesh */}
+                    <div className={`absolute inset-0 rounded-full border border-dashed transition-all duration-700 ${
+                      aiPresence !== 'ready' ? 'border-[var(--accent)] animate-spin opacity-80' : 'border-white/10 animate-[spin_30s_linear_infinite]'
+                    }`} />
+                    
+                    {/* Ring 2 - Double reverse spinning outline */}
+                    <div className={`absolute inset-2 rounded-full border border-double transition-all duration-1000 ${
+                      aiPresence !== 'ready' ? 'border-amber-400/40 animate-[spin_8s_linear_infinite_reverse]' : 'border-white/5 animate-[spin_40s_linear_infinite_reverse]'
+                    }`} />
+                    
+                    {/* Dynamic atmosphere lighting filter */}
+                    <div className={`absolute w-14 h-14 rounded-full blur-xl opacity-35 transition-all duration-500 ${
+                      aiPresence === 'reasoning' ? 'bg-fuchsia-500 scale-130' :
+                      aiPresence === 'searching' ? 'bg-teal-500 scale-115 animate-pulse' :
+                      aiPresence === 'memory recall' ? 'bg-indigo-500 scale-110 opacity-70' :
+                      aiPresence === 'generating' ? 'bg-yellow-400 scale-125 animate-ping' : 'bg-cyan-400'
+                    }`} />
+
+                    {/* Outer companion satellite particles */}
+                    <div className="absolute w-2 h-2 rounded-full bg-[var(--accent)] -top-1 animate-bounce" />
+                    <div className="absolute w-1.5 h-1.5 rounded-full bg-white -bottom-0.5 animate-pulse" />
+
+                    {/* Deep Central Glass brain node */}
+                    <div className={`w-12 h-12 rounded-full bg-black/80 border flex items-center justify-center text-lg z-10 shadow-lg transition-transform ${
+                      aiPresence !== 'ready' ? 'border-[var(--accent)] scale-110 animate-bounce' : 'border-white/20 hover:border-[var(--accent)] hover:scale-105'
+                    }`}>
+                      {aiPresence === 'reasoning' && '🧠'}
+                      {aiPresence === 'searching' && '⚡'}
+                      {aiPresence === 'memory recall' && '💾'}
+                      {aiPresence === 'generating' && '✍️'}
+                      {aiPresence === 'ready' && '🌐'}
+                    </div>
                   </div>
-                  <div>
-                    <h5 className="text-[11px] font-bold text-white uppercase tracking-wider font-mono">Dharmesh Companion Representative</h5>
-                    <p className="text-[10px] text-white/50 mt-1 leading-relaxed">
-                      Consult with representing services about clean stack architecture setups, SQLite caches, or request a customized CTO layout.
+
+                  {/* INTRO TITLE TEXTS */}
+                  <div className="space-y-1">
+                    <h5 className="text-[10px] font-black text-white uppercase tracking-widest font-mono">[ COGNITIVE COMMAND CENTRE ]</h5>
+                    <p className="text-[10px] text-white/50 leading-relaxed px-4">
+                      Dharmesh AI is ready to synthesize secure code arrays, benchmark multithreaded Dart Isolates, or draft consultation papers.
                     </p>
                   </div>
+
+                  {/* FLOATING NEURAL KNOWLEDGE GRAPH (Interactive Synapse Nodes) */}
+                  <div className="w-full bg-black/50 border border-white/5 rounded-[20px] p-3.5 space-y-3.5 backdrop-blur-md">
+                    <div className="flex items-center justify-between font-mono text-[8px] border-b border-white/5 pb-2">
+                      <span className="text-white/40 tracking-widest">// KNOWLEDGE CONSTELLATION NETWORK:</span>
+                      <span className="text-[var(--accent)] animate-pulse uppercase tracking-wider font-extrabold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-ping" />
+                        Graph Active
+                      </span>
+                    </div>
+                    
+                    {/* Connected Knowledge Graph Nodes */}
+                    <div className="relative w-full h-56 bg-zinc-950/80 rounded-2xl border border-white/5 overflow-hidden">
+                      <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                        {/* Connected synapse pathways */}
+                        <line x1="30%" y1="25%" x2="70%" y2="20%" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="1" strokeDasharray="3 3" />
+                        <line x1="30%" y1="25%" x2="50%" y2="48%" stroke="rgba(0, 229, 255, 0.15)" strokeWidth="1" />
+                        <line x1="70%" y1="20%" x2="50%" y2="48%" stroke="rgba(0, 229, 255, 0.15)" strokeWidth="1" />
+                        <line x1="50%" y1="48%" x2="18%" y2="65%" stroke="rgba(255, 110, 64, 0.12)" strokeWidth="1" />
+                        <line x1="50%" y1="48%" x2="82%" y2="56%" stroke="rgba(213, 0, 249, 0.12)" strokeWidth="1" />
+                        <line x1="50%" y1="48%" x2="48%" y2="82%" stroke="rgba(0, 230, 118, 0.15)" strokeWidth="1" />
+                        <line x1="48%" y1="82%" x2="18%" y2="65%" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1" strokeDasharray="2 2" />
+                      </svg>
+
+                      {[
+                        { text: 'Flutter', short: 'ui.eng', q: 'Explain Dharmesh expertise structure in Flutter UI modules and layout architectures', x: '30%', y: '25%', color: 'from-cyan-400 to-blue-500' },
+                        { text: 'Dart', short: 'iso.core', q: 'Tell me about multi-threaded Dart isolates and performance telemetry analysis', x: '70%', y: '20%', color: 'from-blue-500 to-indigo-500' },
+                        { text: 'Firebase', short: 'db.sync', q: 'Explain real-time low-latency cache structures using Firebase integrations', x: '18%', y: '65%', color: 'from-amber-500 to-orange-400' },
+                        { text: 'Architecture', short: 'clean.core', q: 'Explain clean architecture layers and reactive flow management models', x: '50%', y: '48%', color: 'from-emerald-400 to-teal-500' },
+                        { text: 'WebRTC', short: 'rtc.sec', q: 'Explain HIPAA secure WebRTC video signaling protocols built by Dharmesh', x: '82%', y: '56%', color: 'from-pink-500 to-violet-500' },
+                        { text: 'SQLite', short: 'cache.db', q: 'How does Khata app execute local syncing databases with SQLite structures', x: '48%', y: '82%', color: 'from-indigo-400 to-cyan-500' }
+                      ].map((node, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => { triggerAIPortfolioQuery(node.q); playBeep(600 + idx * 80, 0.05); }}
+                          style={{ left: node.x, top: node.y }}
+                          className="absolute -translate-x-1/2 -translate-y-1/2 group flex flex-col items-center cursor-pointer z-10"
+                        >
+                          {/* Pulsing glow node */}
+                          <div className={`w-3.5 h-3.5 rounded-full bg-gradient-to-tr ${node.color} flex items-center justify-center p-[2px] shadow-lg group-hover:scale-125 transition-transform duration-300 relative`}>
+                            <div className="w-full h-full rounded-full bg-zinc-950 animate-ping absolute inset-0 opacity-45 group-hover:opacity-100" />
+                            <div className="w-full h-full rounded-full bg-zinc-950 z-10" />
+                          </div>
+                          
+                          {/* Micro labels */}
+                          <div className="mt-1 bg-black/90 border border-white/5 group-hover:border-[var(--accent)] px-1.5 py-0.5 rounded text-[7px] font-mono whitespace-nowrap text-zinc-300 group-hover:text-white transition-all shadow-md">
+                            <span className="font-black text-[7.5px] block leading-none">{node.text}</span>
+                            <span className="text-zinc-500 text-[5px] uppercase tracking-widest">{node.short}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <p className="text-[7.5px] font-mono text-zinc-500 text-center uppercase tracking-widest">
+                      [ Interactive connected neural map complete ]
+                    </p>
+                  </div>
+
                 </div>
               )}
-              {aiHistory.map((h) => (
-                <div key={h.id} className={`flex flex-col ${h.role === 'user' ? 'items-end' : 'items-start'}`}>
-                  <div className={`p-3 rounded-2xl max-w-[85%] text-[11px] leading-relaxed relative ${
-                    h.role === 'user' 
-                      ? 'bg-[var(--accent)] text-black font-semibold shadow-md' 
-                      : 'bg-white/[0.03] border border-white/10 text-white shadow-sm'
-                  }`}>
-                    {h.text}
-                    <span className={`absolute -bottom-4 text-[7px] font-mono text-white/35 ${h.role === 'user' ? 'right-1' : 'left-1'}`}>
-                      {h.timestamp}
-                    </span>
+              {aiHistory.map((h) => {
+                const textWithoutTags = h.text
+                  .replace('[RECRUITER_SUMMARY_CARD]', '')
+                  .replace('[FOUNDER_SUMMARY_CARD]', '')
+                  .replace('[ARCH_REVIEW_CARD]', '')
+                  .replace('[PROJECT_REC_CARD]', '')
+                  .trim();
+
+                const isRecruiterCard = h.text.includes('[RECRUITER_SUMMARY_CARD]');
+                const isFounderCard = h.text.includes('[FOUNDER_SUMMARY_CARD]');
+                const isArchCard = h.text.includes('[ARCH_REVIEW_CARD]');
+                const isProjectCard = h.text.includes('[PROJECT_REC_CARD]');
+
+                return (
+                  <div key={h.id} className={`flex flex-col ${h.role === 'user' ? 'items-end' : 'items-start'} space-y-2 mb-4`}>
+                    <div className={`p-3 rounded-2xl max-w-[85%] text-[11px] leading-relaxed relative ${
+                      h.role === 'user' 
+                        ? 'bg-[var(--accent)] text-black font-semibold shadow-md' 
+                        : 'bg-white/[0.03] border border-white/10 text-white shadow-sm'
+                    }`}>
+                      {textWithoutTags}
+                      
+                      {/* --- RECRUITER SUMMARY CARD --- */}
+                      {isRecruiterCard && (
+                        <div className="mt-3 p-3 bg-emerald-950/40 border border-emerald-500/30 rounded-xl space-y-2 font-sans text-white text-left shadow-lg backdrop-blur-xl">
+                          <div className="flex items-center justify-between border-b border-emerald-500/20 pb-1.5">
+                            <span className="text-[9px] font-mono tracking-widest text-emerald-400 font-extrabold uppercase">👔 Recruiter Focus Desk</span>
+                            <span className="bg-emerald-500/20 text-emerald-300 text-[6.5px] font-black px-1.5 py-0.5 rounded border border-emerald-500/30">VERIFIED CONTRACTOR</span>
+                          </div>
+                          <div className="space-y-1 text-[9.5px]">
+                            <div className="flex justify-between">
+                              <span className="text-zinc-400">Total Industry Exp:</span>
+                              <span className="font-bold text-emerald-300">3.5+ Years Professional</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-zinc-400">Prime Core Capability:</span>
+                              <span className="font-bold text-white">Flutter Lead Architect</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-zinc-400">Active Notice / Availability:</span>
+                              <span className="font-bold text-emerald-300 animate-pulse">Immediate Joiner</span>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1.5 pt-1">
+                            <button 
+                              onClick={() => {
+                                const directLink = document.createElement('a');
+                                directLink.href = 'mailto:katariyadharmesh658@gmail.com';
+                                directLink.click();
+                                playBeep(520, 0.1);
+                              }}
+                              className="w-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-[7.5px] text-emerald-300 font-black uppercase tracking-wider py-1 rounded transition-all cursor-pointer"
+                            >
+                              📧 Direct Email
+                            </button>
+                            <button 
+                              onClick={printCV}
+                              className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-[7.5px] text-white font-black uppercase tracking-wider py-1 rounded transition-all cursor-pointer"
+                            >
+                              Download CV
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* --- FOUNDER SUMMARY CARD --- */}
+                      {isFounderCard && (
+                        <div className="mt-3 p-3 bg-amber-950/40 border border-amber-500/30 rounded-xl space-y-2 font-sans text-white text-left shadow-lg backdrop-blur-xl">
+                          <div className="flex items-center justify-between border-b border-amber-500/20 pb-1.5">
+                            <span className="text-[9px] font-mono tracking-widest text-amber-400 font-extrabold uppercase">🚀 CTO & Founder Hub</span>
+                            <span className="bg-amber-500/20 text-amber-300 text-[6.5px] font-black px-1.5 py-0.5 rounded border border-amber-500/30">SCALE READY</span>
+                          </div>
+                          <div className="space-y-1 text-[9.5px]">
+                            <div className="flex justify-between">
+                              <span className="text-zinc-400">Product Scaling:</span>
+                              <span className="font-bold text-amber-300">0 to 1 MVP velocity</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-zinc-400">Security / Compliance:</span>
+                              <span className="font-bold text-white">HIPAA secure channels</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-zinc-400">Sync Masterclass:</span>
+                              <span className="font-bold text-amber-300">Khata Syncing engines</span>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1.5 pt-1">
+                            <button 
+                              onClick={() => {
+                                const directLink = document.createElement('a');
+                                directLink.href = 'tel:+916354464371';
+                                directLink.click();
+                                playBeep(520, 0.1);
+                              }}
+                              className="w-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-[7.5px] text-amber-300 font-black uppercase tracking-wider py-1 rounded transition-all cursor-pointer"
+                            >
+                              📞 Direct Call
+                            </button>
+                            <button 
+                              onClick={() => {
+                                setTheme('sunset');
+                                setLayout('glassmorphism-studio');
+                                setBgType('galaxy');
+                                playBeep(260, 0.1);
+                              }}
+                              className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-[7.5px] text-white font-black uppercase tracking-wider py-1 rounded transition-all cursor-pointer"
+                            >
+                              Launch Pitch Mode
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* --- ARCHITECTURE REVIEW CARD --- */}
+                      {isArchCard && (
+                        <div className="mt-3 p-3 bg-cyan-950/40 border border-cyan-500/30 rounded-xl space-y-2 font-sans text-white text-left shadow-lg backdrop-blur-xl">
+                          <div className="flex items-center justify-between border-b border-cyan-500/20 pb-1.5">
+                            <span className="text-[9px] font-mono tracking-widest text-cyan-400 font-extrabold uppercase">🧠 Clean Architecture Node</span>
+                            <span className="bg-cyan-500/20 text-cyan-300 text-[6.5px] font-black px-1.5 py-0.5 rounded border border-cyan-500/30">COMPILER OK</span>
+                          </div>
+                          <div className="space-y-1 text-[9.5px]">
+                            <div className="flex justify-between">
+                              <span className="text-zinc-400">State Handlers:</span>
+                              <span className="font-bold text-cyan-300">BLoC, Riverpod, GetX</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-zinc-400">Isolation Layer:</span>
+                              <span className="font-bold text-white">Full core decoupling</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-zinc-400">Concurrent Sync:</span>
+                              <span className="font-bold text-cyan-300">Active SQLite queues</span>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1.5 pt-1">
+                            <button 
+                              onClick={() => {
+                                setTheme('tesla-black');
+                                setLayout('terminal-hacker');
+                                setCursorStyle('terminal');
+                                playBeep(520, 0.1);
+                              }}
+                              className="w-full bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-[7.5px] text-cyan-400 font-black uppercase tracking-wider py-1 rounded transition-all cursor-pointer"
+                            >
+                              💻 Hacker Terminal
+                            </button>
+                            <button 
+                              onClick={() => {
+                                const el = document.getElementById('config-studio-btn');
+                                if (el) el.click();
+                                playBeep(260, 0.1);
+                              }}
+                              className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-[7.5px] text-white font-black uppercase tracking-wider py-1 rounded transition-all cursor-pointer"
+                            >
+                              Config Studio
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* --- PROJECT RECOMMENDATION CARD --- */}
+                      {isProjectCard && (
+                        <div className="mt-3 p-3 bg-fuchsia-950/40 border border-fuchsia-500/30 rounded-xl space-y-2 font-sans text-white text-left shadow-lg backdrop-blur-xl">
+                          <div className="flex items-center justify-between border-b border-fuchsia-500/20 pb-1.5">
+                            <span className="text-[9px] font-mono tracking-widest text-fuchsia-400 font-extrabold uppercase">📈 Project Recommender</span>
+                            <span className="bg-fuchsia-500/20 text-fuchsia-300 text-[6.5px] font-black px-1.5 py-0.5 rounded border border-fuchsia-500/30">ALGORITHMIC</span>
+                          </div>
+                          <div className="space-y-1 text-[9.5px]">
+                            <div className="flex justify-between">
+                              <span className="text-zinc-400">Match Helix Care:</span>
+                              <span className="font-bold text-fuchsia-300">98% Fit Rating</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-zinc-400">Database Offline:</span>
+                              <span className="font-bold text-white">Khata Ledger (SQLite)</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-zinc-400">Enterprise Scale:</span>
+                              <span className="font-bold text-fuchsia-300">Resido property admin</span>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1.5 pt-1">
+                            <button 
+                              onClick={() => {
+                                const btn = document.getElementById('operations-hub-btn');
+                                if (btn) btn.click();
+                                playBeep(520, 0.1);
+                              }}
+                              className="w-full bg-fuchsia-500/20 hover:bg-fuchsia-500/30 border border-fuchsia-500/40 text-[7.5px] text-fuchsia-300 font-black uppercase tracking-wider py-1 rounded transition-all cursor-pointer"
+                            >
+                              🏥 Operations Hub
+                            </button>
+                            <button 
+                              onClick={() => {
+                                const btn = document.getElementById('spotlight-search-btn');
+                                if (btn) btn.click();
+                                playBeep(260, 0.1);
+                              }}
+                              className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-[7.5px] text-white font-black uppercase tracking-wider py-1 rounded transition-all cursor-pointer"
+                            >
+                              Spotlight Search
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      <span className={`absolute -bottom-4 text-[7px] font-mono text-white/35 ${h.role === 'user' ? 'right-1' : 'left-1'}`}>
+                        {h.timestamp}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {aiTyping && (
                 <div className="flex items-center gap-2 px-2 text-[10px] text-white/50 font-mono animate-pulse">
                   <span className="flex h-1.5 w-1.5 relative">
@@ -3281,6 +3987,77 @@ export default function App() {
                   <p className="text-xs text-cyan-400 font-mono bg-black/40 border border-white/10 p-3 rounded-lg leading-relaxed select-all">{selectedProject.architecture}</p>
                 </div>
 
+                <ProjectArchitectureAccordion techStack={selectedProject.techStack} category={selectedProject.category} />
+
+                {/* CASE STUDY INTELLIGENCE LAYER */}
+                <div className="border border-white/5 p-4 rounded-[20px] bg-black/50 space-y-3 shadow-inner">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" />
+                    <span className="text-[8.5px] uppercase font-mono tracking-widest text-[#00ffcc] font-black">// ARCHITECTURAL PERFORMANCE COEFFICIENT</span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <div className="flex justify-between items-center text-[8.5px] font-mono mb-1 text-slate-400">
+                        <span>DIFFICULTY</span>
+                        <span className="text-white font-extrabold">
+                          {selectedProject.id === 'helix-care' ? 94 : selectedProject.id === 'resido-property' ? 88 : selectedProject.id === 'khata-ledger' ? 85 : 80}%
+                        </span>
+                      </div>
+                      <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-rose-500 rounded-full transition-all duration-1000" 
+                          style={{ width: `${selectedProject.id === 'helix-care' ? 94 : selectedProject.id === 'resido-property' ? 88 : selectedProject.id === 'khata-ledger' ? 85 : 80}%` }} 
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between items-center text-[8.5px] font-mono mb-1 text-slate-400">
+                        <span>IMPACT LEVEL</span>
+                        <span className="text-emerald-400 font-extrabold">
+                          {selectedProject.id === 'helix-care' ? 98 : selectedProject.id === 'resido-property' ? 92 : selectedProject.id === 'khata-ledger' ? 96 : 88}%
+                        </span>
+                      </div>
+                      <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-emerald-400 rounded-full transition-all duration-1000" 
+                          style={{ width: `${selectedProject.id === 'helix-care' ? 98 : selectedProject.id === 'resido-property' ? 92 : selectedProject.id === 'khata-ledger' ? 96 : 88}%` }} 
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between items-center text-[8.5px] font-mono mb-1 text-slate-400">
+                        <span>COMPLEXITY</span>
+                        <span className="text-amber-400 font-extrabold">
+                          {selectedProject.id === 'helix-care' ? 96 : selectedProject.id === 'resido-property' ? 85 : selectedProject.id === 'khata-ledger' ? 90 : 78}%
+                        </span>
+                      </div>
+                      <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-amber-400 rounded-full transition-all duration-1000" 
+                          style={{ width: `${selectedProject.id === 'helix-care' ? 96 : selectedProject.id === 'resido-property' ? 85 : selectedProject.id === 'khata-ledger' ? 90 : 78}%` }} 
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between items-center text-[8.5px] font-mono mb-1 text-slate-400">
+                        <span>SCALE RATING</span>
+                        <span className="text-cyan-400 font-extrabold">
+                          {selectedProject.id === 'helix-care' ? 95 : selectedProject.id === 'resido-property' ? 87 : selectedProject.id === 'khata-ledger' ? 94 : 85}%
+                        </span>
+                      </div>
+                      <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-cyan-400 rounded-full transition-all duration-1000" 
+                          style={{ width: `${selectedProject.id === 'helix-care' ? 95 : selectedProject.id === 'resido-property' ? 87 : selectedProject.id === 'khata-ledger' ? 94 : 85}%` }} 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Challenges & Results */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="border border-white/10 bg-black/10 p-3 rounded-xl">
@@ -3324,143 +4101,79 @@ export default function App() {
       </AnimatePresence>
 
       {/* --- CMD PALETTE DIALOG SEARCH --- */}
+      <SpotlightOverlay
+        isOpen={isCmdPaletteOpen}
+        onClose={() => setIsCmdPaletteOpen(false)}
+        onThemeChange={setTheme}
+        onLayoutChange={setLayout}
+        onInspectProject={inspectProject}
+        onChatPrompt={triggerAIPortfolioQuery}
+        onDownloadResume={printCV}
+        onContactTrigger={() => {
+          triggerAIPortfolioQuery("How can we reach Dharmesh directly? Provide email channels.");
+        }}
+        playBeep={playBeep}
+        currentTheme={theme}
+        currentLayout={layout}
+      />
+
+      {/* Floating Download CV Glass Notification Overlay */}
       <AnimatePresence>
-        {isCmdPaletteOpen && (
-          <div className="fixed inset-0 z-[2100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <motion.div
-              initial={{ scale: 0.97, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.97, opacity: 0 }}
-              className="bg-black/90 border border-white/10 w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl p-4 space-y-4"
-            >
-              
-              <div className="flex items-center gap-2 border-b border-white/10 pb-2">
-                <Search className="w-4 h-4 text-[var(--accent)]" />
-                <input
-                  type="text"
-                  autoFocus
-                  value={cmdSearchQuery}
-                  onChange={(e) => setCmdSearchQuery(e.target.value)}
-                  placeholder="Type search queries (e.g. sunset, bento, recruiter)..."
-                  className="w-full bg-transparent border-none text-white outline-none text-xs"
-                />
-                <button onClick={() => setIsCmdPaletteOpen(false)} className="text-rose-500 p-1">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Commands list */}
-              <div className="space-y-1.5 max-h-60 overflow-y-auto font-mono text-[11px]">
-                
-                <span className="text-[9px] text-white/50 px-3 py-1 block uppercase">Switch Mode Perspectives</span>
-                <div onClick={() => executeCommand('dev-mode')} className="p-2 bg-black/30 border border-transparent hover:border-cyan-500/30 rounded-lg cursor-pointer flex justify-between">
-                  <span>&gt; Switch to Developer Space perspective</span>
-                  <span className="text-cyan-400 font-bold">MODE</span>
+        {cvDownloadState !== 'idle' && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 30, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            className="fixed bottom-6 right-6 z-[3500] max-w-sm w-80 bg-black/85 border border-white/10 rounded-2xl p-4 shadow-2xl backdrop-blur-xl flex flex-col gap-3 font-sans text-white overflow-hidden"
+          >
+            {/* Ambient lighting inside notification */}
+            <div className="absolute -top-12 -right-12 w-24 h-24 bg-[var(--accent)]/20 rounded-full blur-2xl pointer-events-none" />
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-xl bg-white/5 border border-white/10 ${cvDownloadState === 'success' ? 'text-emerald-400 border-emerald-500/30' : 'text-[var(--accent)] border-[var(--accent)]/30'}`}>
+                  {cvDownloadState === 'downloading' ? (
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                    >
+                      <Loader2 className="w-4 h-4" />
+                    </motion.div>
+                  ) : (
+                    <CheckCircle className="w-4 h-4 animate-bounce" />
+                  )}
                 </div>
-                <div onClick={() => executeCommand('rec-mode')} className="p-2 bg-black/30 border border-transparent hover:border-cyan-500/30 rounded-lg cursor-pointer flex justify-between">
-                  <span>&gt; Switch to Recruiter Hiring perspective</span>
-                  <span className="text-cyan-400 font-bold">MODE</span>
-                </div>
-                <div onClick={() => executeCommand('fnd-mode')} className="p-2 bg-black/30 border border-transparent hover:border-cyan-500/30 rounded-lg cursor-pointer flex justify-between">
-                  <span>&gt; Switch to Founder Impact perspective</span>
-                  <span className="text-cyan-400 font-bold">MODE</span>
-                </div>
-
-                <span className="text-[9px] text-white/50 px-3 py-1 block uppercase font-bold">Configure designs</span>
-                <div onClick={() => executeCommand('layout-classic')} className="p-2 bg-black/30 border border-transparent hover:border-cyan-500/30 rounded-lg cursor-pointer flex justify-between">
-                  <span>&gt; Apply Classic layout style</span>
-                  <span className="text-yellow-400">LAYOUT</span>
-                </div>
-                <div onClick={() => executeCommand('layout-bento')} className="p-2 bg-black/30 border border-transparent hover:border-cyan-500/30 rounded-lg cursor-pointer flex justify-between">
-                  <span>&gt; Apply Bento template style</span>
-                  <span className="text-yellow-400">LAYOUT</span>
-                </div>
-                <div onClick={() => executeCommand('theme-sunset')} className="p-2 bg-black/30 border border-transparent hover:border-cyan-500/30 rounded-lg cursor-pointer flex justify-between">
-                  <span>&gt; Switch context theme to Sunset Orange</span>
-                  <span className="text-blue-400">PALETTE</span>
-                </div>
-
-                <span className="text-[9px] text-white/50 px-3 py-1 block uppercase">Platform actions</span>
-                <div onClick={() => executeCommand('cv')} className="p-2 bg-black/30 border border-transparent hover:border-cyan-500/30 rounded-lg cursor-pointer flex justify-between">
-                  <span>&gt; Download or stream Dharmeshes CV PDF document</span>
-                  <span className="text-emerald-400">PDF</span>
-                </div>
-
-              </div>
-
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* --- CV RESUME ANIMATED DOWNLOAD OVERLAY --- */}
-      <AnimatePresence>
-        {downloadState !== 'idle' && (
-          <div className="fixed inset-0 z-[11000] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 select-none">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-black/95 border border-white/10 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl p-6 space-y-6 text-white font-mono"
-            >
-              <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                <div className="flex items-center gap-2">
-                  <Download className="w-4 h-4 text-[var(--accent)] animate-bounce" />
-                  <span className="text-xs font-bold uppercase tracking-wider">PDF Compilation Suite</span>
-                </div>
-                <span className="text-[9px] bg-[var(--accent)]/15 text-[var(--accent)] px-2 py-0.5 rounded uppercase font-bold">
-                  {downloadState === 'downloading' ? 'COMPILING' : 'SUCCESS'}
-                </span>
-              </div>
-
-              {/* Progress Dial & Status */}
-              <div className="flex flex-col items-center justify-center py-2 space-y-4">
-                <div className="relative w-24 h-24 flex items-center justify-center">
-                  {/* SVG progress circle */}
-                  <svg className="w-full h-full transform -rotate-90">
-                    <circle cx="48" cy="48" r="40" stroke="rgba(255,255,255,0.05)" strokeWidth="6" fill="transparent" />
-                    <circle 
-                      cx="48" 
-                      cy="48" 
-                      r="40" 
-                      stroke="var(--accent)" 
-                      strokeWidth="6" 
-                      fill="transparent" 
-                      strokeDasharray={2 * Math.PI * 40}
-                      strokeDashoffset={2 * Math.PI * 40 * (1 - downloadProgress / 100)}
-                      className="transition-all duration-150"
-                    />
-                  </svg>
-                  <span className="absolute text-lg font-bold text-white tracking-tighter">
-                    {downloadProgress}%
-                  </span>
-                </div>
-
-                <div className="text-center">
-                  <p className="text-xs font-bold text-white uppercase tracking-wider">
-                    {downloadState === 'downloading' ? 'Generating Print-Ready Asset' : 'Dossier Dispatched Successfully'}
+                <div>
+                  <h4 className="text-[11px] uppercase font-black tracking-widest text-white leading-none">
+                    {cvDownloadState === 'downloading' ? 'Downloading CV' : 'Download Complete'}
+                  </h4>
+                  <p className="text-[9px] text-white/50 tracking-wide font-mono mt-1.5 truncate max-w-[170px]">
+                    Dharmesh_Ahir_Resume.pdf
                   </p>
-                  <p className="text-[10px] text-zinc-500 mt-1">Dharmesh_Ahir_Flutter_Resume.pdf</p>
                 </div>
               </div>
+              <span className="text-[10px] font-bold font-mono text-[var(--accent)]">
+                {cvDownloadState === 'downloading' ? `${cvProgress}%` : 'READY'}
+              </span>
+            </div>
 
-              {/* Fake Compiler Logs console box */}
-              <div className="bg-[#030712] border border-white/5 p-3 rounded-xl h-36 overflow-y-auto space-y-1 text-[9.5px] text-zinc-400 select-all custom-scrollbar">
-                {downloadLog.map((log, idx) => (
-                  <div key={idx} className={log.includes('complete') || log.includes('initiated') ? 'text-emerald-400 font-bold' : log.includes('Resolving') ? 'text-cyan-400' : ''}>
-                    {log}
-                  </div>
-                ))}
-              </div>
+            {/* Simulated interactive linear progression track */}
+            <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden relative border border-white/5">
+              <div
+                className="absolute top-0 left-0 h-full bg-gradient-to-r from-[var(--accent)] to-indigo-500 rounded-full transition-all duration-155"
+                style={{ width: `${cvProgress}%` }}
+              />
+            </div>
 
-              <div className="text-center text-[8.5px] text-zinc-600 uppercase tracking-widest border-t border-white/5 pt-3">
-                {downloadState === 'downloading' ? 'Assembling system parameters...' : '✔ Transmission complete.'}
-              </div>
-            </motion.div>
-          </div>
+            <div className="text-[8px] text-white/40 font-mono flex items-center justify-between">
+              <span>Channel: SECURED (SSL)</span>
+              <span>Rate: ~1.2 MB/s</span>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
     </div>
-  );
-}
+   );
+ }

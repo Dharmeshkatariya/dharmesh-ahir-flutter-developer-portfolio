@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { LivingThreeIllustration } from './LivingThreeIllustration';
 import { Project, Experience } from '../types';
 import { 
   Folder, 
@@ -114,7 +115,8 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({
     '[STABLE] SQLite cache memory allocated (4MB bucket).',
     '[DVM] Native isolations initialized.'
   ]);
-  const [activeBottomTab, setActiveBottomTab] = useState<'projects' | 'contact' | 'inbox'>('projects');
+  const [activeBottomTab, setActiveBottomTab] = useState<'projects' | 'contact' | 'inbox' | 'architecture'>('projects');
+  const [selectedArchNode, setSelectedArchNode] = useState<string>('flutter_client');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [msg, setMsg] = useState('');
@@ -353,6 +355,7 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({
         <div className="flex bg-neutral-950/90 border-b border-white/[0.06] overflow-x-auto select-none">
           {[
             { id: 'projects', label: `Deliverable Matrix [${projects.length}]`, icon: Layout },
+            { id: 'architecture', label: 'Live System Architecture Diagram', icon: Cpu },
             { id: 'contact', label: 'Inbound Conduit Tunnel', icon: Server },
             { id: 'inbox', label: `Reconciled Streams (${contacts.length})`, icon: Bug }
           ].map((item) => (
@@ -441,6 +444,208 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardViewProps> = ({
                     ))}
                   </div>
                 )}
+              </motion.div>
+            )}
+
+            {activeBottomTab === 'architecture' && (
+              <motion.div
+                key="system-architecture"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                className="space-y-6"
+              >
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                  
+                  {/* Interactive Schema Connect Grid Node Map */}
+                  <div className="lg:col-span-7 bg-neutral-950 p-6 rounded-2xl border border-white/5 relative overflow-hidden min-h-[380px] flex flex-col justify-center">
+                    <div className="absolute top-3 left-4 flex items-center gap-1.5 text-[8px] font-mono text-cyan-400 font-bold uppercase tracking-widest">
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                      SECURE PIPELINE HOVER FLOWCHART SYSTEM
+                    </div>
+
+                    {/* Laser pathways representation inside custom visual canvas wrapper */}
+                    <div className="w-full h-72 relative items-center justify-center hidden sm:flex">
+                      <svg className="absolute inset-0 w-full h-full pointer-events-none stroke-purple-500/30 fill-none" style={{ filter: 'drop-shadow(0 0 4px rgba(168, 85, 247, 0.2))' }}>
+                        {/* Animated Laser Pulse flows */}
+                        <path d="M 120,60 L 320,60" strokeDasharray="6 6" className="stroke-cyan-400 animate-[dash_12s_linear_infinite]" />
+                        <path d="M 320,60 L 480,120" strokeDasharray="6 6" className="stroke-purple-400 animate-[dash_10s_linear_infinite]" />
+                        <path d="M 120,60 L 120,200" strokeDasharray="6 6" className="stroke-emerald-400 animate-[dash_8s_linear_infinite]" />
+                        <path d="M 120,200 L 320,200" strokeDasharray="6 6" className="stroke-indigo-400 animate-[dash_9s_linear_infinite]" />
+                        <path d="M 320,200 L 480,120" strokeDasharray="6 6" className="stroke-rose-400 animate-[dash_11s_linear_infinite]" />
+                      </svg>
+
+                      {/* Interactive CSS absolute node clusters mapping */}
+                      {/* Node 1: Client device portal */}
+                      <button 
+                        onClick={() => { playBeep(523, 0.08); setSelectedArchNode('flutter_client'); }}
+                        className={`absolute left-[40px] top-[20px] p-3 rounded-2xl border flex flex-col items-center gap-1 text-center bg-black transition-all ${selectedArchNode === 'flutter_client' ? 'border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)] scale-105 z-10' : 'border-white/10 hover:border-cyan-500/40'}`}
+                      >
+                        <Cpu className={`w-5 h-5 ${selectedArchNode === 'flutter_client' ? 'text-cyan-400' : 'text-neutral-500'}`} />
+                        <span className="text-[10px] font-sans font-black uppercase text-white">Flutter App</span>
+                        <span className="text-[8px] font-mono text-neutral-400">Client Engine</span>
+                      </button>
+
+                      {/* Node 2: Firebase authentication gate */}
+                      <button 
+                        onClick={() => { playBeep(587, 0.08); setSelectedArchNode('firebase_auth'); }}
+                        className={`absolute left-[40px] top-[160px] p-3 rounded-2xl border flex flex-col items-center gap-1 text-center bg-black transition-all ${selectedArchNode === 'firebase_auth' ? 'border-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.2)] scale-105 z-10' : 'border-white/10 hover:border-emerald-500/40'}`}
+                      >
+                        <Database className={`w-5 h-5 ${selectedArchNode === 'firebase_auth' ? 'text-emerald-400' : 'text-neutral-500'}`} />
+                        <span className="text-[10px] font-sans font-black uppercase text-white">Firebase/Auth</span>
+                        <span className="text-[8px] font-mono text-neutral-400">User Ledger</span>
+                      </button>
+
+                      {/* Node 3: Core server engine */}
+                      <button 
+                        onClick={() => { playBeep(659, 0.08); setSelectedArchNode('node_server'); }}
+                        className={`absolute left-[240px] top-[90px] p-3.5 rounded-2xl border flex flex-col items-center gap-1.5 text-center bg-black transition-all ${selectedArchNode === 'node_server' ? 'border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.2)] scale-105 z-10' : 'border-white/10 hover:border-purple-500/40'}`}
+                      >
+                        <Server className={`w-6 h-6 ${selectedArchNode === 'node_server' ? 'text-purple-400' : 'text-neutral-400'}`} />
+                        <span className="text-[10px] font-sans font-black uppercase text-white">Node/Express</span>
+                        <span className="text-[8px] font-mono text-neutral-400">API Gateway</span>
+                      </button>
+
+                      {/* Node 4: WebRTC Peer to Peer coordinator */}
+                      <button 
+                        onClick={() => { playBeep(698, 0.08); setSelectedArchNode('webrtc_stream'); }}
+                        className={`absolute left-[400px] top-[20px] p-3 rounded-2xl border flex flex-col items-center gap-1 text-center bg-black transition-all ${selectedArchNode === 'webrtc_stream' ? 'border-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.2)] scale-105 z-10' : 'border-white/10 hover:border-sky-500/40'}`}
+                      >
+                        <Activity className={`w-5 h-5 ${selectedArchNode === 'webrtc_stream' ? 'text-sky-400' : 'text-neutral-500'}`} />
+                        <span className="text-[10px] font-sans font-black uppercase text-white">WebRTC Relays</span>
+                        <span className="text-[8px] font-mono text-neutral-400">Video Streams</span>
+                      </button>
+
+                      {/* Node 5: Stripe Transactions Tunnel */}
+                      <button 
+                        onClick={() => { playBeep(784, 0.08); setSelectedArchNode('stripe_payment'); }}
+                        className={`absolute left-[400px] top-[160px] p-3 rounded-2xl border flex flex-col items-center gap-1 text-center bg-black transition-all ${selectedArchNode === 'stripe_payment' ? 'border-rose-400 shadow-[0_0_15px_rgba(251,113,133,0.2)] scale-105 z-10' : 'border-white/10 hover:border-rose-500/40'}`}
+                      >
+                        <Sparkles className={`w-5 h-5 ${selectedArchNode === 'stripe_payment' ? 'text-rose-400' : 'text-neutral-500'}`} />
+                        <span className="text-[10px] font-sans font-black uppercase text-white">Stripe PCI</span>
+                        <span className="text-[8px] font-mono text-neutral-400">Split Gate</span>
+                      </button>
+                    </div>
+
+                    {/* Fallback vertical layout for tiny mobile screens */}
+                    <div className="flex sm:hidden flex-col gap-2 relative z-10 mt-6">
+                      {[
+                        { id: 'flutter_client', name: 'Flutter Client Engine', style: 'border-cyan-400 text-cyan-400' },
+                        { id: 'firebase_auth', name: 'Firebase & Auth Database', style: 'border-emerald-400 text-emerald-400' },
+                        { id: 'node_server', name: 'Node API gateway server', style: 'border-purple-400 text-purple-400' },
+                        { id: 'webrtc_stream', name: 'Low-Latency WebRTC Stream', style: 'border-sky-400 text-sky-400' },
+                        { id: 'stripe_payment', name: 'Secure Stripe PCI Payments', style: 'border-rose-400 text-rose-400' }
+                      ].map(lnk => (
+                        <button 
+                          key={lnk.id}
+                          onClick={() => { playBeep(500, 0.05); setSelectedArchNode(lnk.id); }}
+                          className={`w-full p-2.5 rounded-xl border text-xs text-left font-mono font-bold flex justify-between bg-black ${selectedArchNode === lnk.id ? lnk.style : 'border-white/10 text-white/60'}`}
+                        >
+                          <span>{lnk.name}</span>
+                          <span>ACTIVE</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Node specifications detail reader */}
+                  <div className="lg:col-span-5 bg-black/60 border border-white/10 rounded-2xl p-5 shadow-2xl relative overflow-hidden backdrop-blur-md self-stretch flex flex-col justify-between group/detail">
+                    
+                    {/* Living 3D Spatial illustration corresponding with selection */}
+                    <div className="absolute top-2 right-2 w-28 h-28 pointer-events-none opacity-40 group-hover/detail:opacity-90 transition-opacity duration-300">
+                      {selectedArchNode === 'flutter_client' && (
+                        <LivingThreeIllustration type="flutter-sphere" className="w-full h-full" glowColor="#00e5ff" />
+                      )}
+                      {selectedArchNode === 'firebase_auth' && (
+                        <LivingThreeIllustration type="neural-orb" className="w-full h-full" glowColor="#00e676" />
+                      )}
+                      {selectedArchNode === 'node_server' && (
+                        <LivingThreeIllustration type="developer-planet" className="w-full h-full" glowColor="#d500f9" />
+                      )}
+                      {selectedArchNode === 'webrtc_stream' && (
+                        <LivingThreeIllustration type="ai-brain-core" className="w-full h-full" glowColor="#00e5ff" />
+                      )}
+                      {selectedArchNode === 'stripe_payment' && (
+                        <LivingThreeIllustration type="architecture-galaxy" className="w-full h-full" glowColor="#ff5722" />
+                      )}
+                    </div>
+
+                    <div className="relative z-10 w-full">
+                      {selectedArchNode === 'flutter_client' ? (
+                        <div className="space-y-4">
+                          <span className="text-[9px] font-bold font-mono text-cyan-400 uppercase tracking-widest bg-cyan-950/20 px-2 py-0.5 rounded border border-cyan-500/20">Flutter User Interface Engine</span>
+                          <h3 className="text-base font-bold text-white tracking-tight">Decoupled Presentation Module</h3>
+                          <p className="text-xs text-neutral-400 leading-relaxed font-sans mt-2">
+                            Engineered client interfaces run 120 FPS render loops. Maintains device-level Hive key-value memory mapping and SQLite queries under 4 milliseconds latency. Employs Riverpod/GetX state sovereignty to isolate memory leaks during high-bandwidth media streams.
+                          </p>
+                          <div className="space-y-1 pt-2 font-mono text-[9px] text-[#00ffcc]">
+                            <div>⚡ Heap Overhead: ~45 MB stable</div>
+                            <div>⚡ Local Query Sync: Direct loop via SQLite</div>
+                            <div>⚡ Decouption: 100% Repository architecture</div>
+                          </div>
+                        </div>
+                      ) : selectedArchNode === 'firebase_auth' ? (
+                        <div className="space-y-4">
+                          <span className="text-[9px] font-bold font-mono text-emerald-400 uppercase tracking-widest bg-emerald-950/20 px-2 py-0.5 rounded border border-emerald-500/20">Firebase Store & Auth</span>
+                          <h3 className="text-base font-bold text-white tracking-tight">Multi-Tenant Document Store</h3>
+                          <p className="text-xs text-neutral-400 leading-relaxed font-sans mt-2">
+                            Leverages Google Cloud SDK security rule configurations to audit database leaks. Coordinates real-time collection triggers to reconcile mobile device offsets during offline-to-online stream handshaking.
+                          </p>
+                          <div className="space-y-1 pt-2 font-mono text-[9px] text-emerald-400">
+                            <div>⚡ Handshaking: Automatic local conflict resolves</div>
+                            <div>⚡ Connection Guard: GSecured TLS 1.3</div>
+                            <div>⚡ Partition latency: Instant cloud sync triggers</div>
+                          </div>
+                        </div>
+                      ) : selectedArchNode === 'node_server' ? (
+                        <div className="space-y-4">
+                          <span className="text-[9px] font-bold font-mono text-purple-400 uppercase tracking-widest bg-purple-950/20 px-2 py-0.5 rounded border border-purple-500/20">Node.js Express Compiler</span>
+                          <h3 className="text-base font-bold text-white tracking-tight">Central REST API Orchestrator</h3>
+                          <p className="text-xs text-neutral-400 leading-relaxed font-sans mt-2">
+                            The central traffic controller. Directs incoming API requests, manages multi-user WebRTC signal packets, compiles client sandboxes via esbuild, and safeguards third-party credentials safely away from client-side vulnerability.
+                          </p>
+                          <div className="space-y-1 pt-2 font-mono text-[9px] text-purple-400">
+                            <div>⚡ Average Service Response: 12ms</div>
+                            <div>⚡ SSL Tunneling: Enforced global TLS proxy</div>
+                            <div>⚡ Process Core: Spawns sandboxed subprocess tasks</div>
+                          </div>
+                        </div>
+                      ) : selectedArchNode === 'stripe_payment' ? (
+                        <div className="space-y-4">
+                          <span className="text-[9px] font-bold font-mono text-rose-400 uppercase tracking-widest bg-rose-950/20 px-2 py-0.5 rounded border border-rose-500/20">Stripe Payment Tunnel</span>
+                          <h3 className="text-base font-bold text-white tracking-tight">Secure PCI Billing Controller</h3>
+                          <p className="text-xs text-neutral-400 leading-relaxed font-sans mt-2">
+                            Coordinates secure transaction billing pipelines. Utilizes transactional database webhooks to initiate commission shares, doctor credit records, and subscription billing cycles on immediate secure payment gateways.
+                          </p>
+                          <div className="space-y-1 pt-2 font-mono text-[9px] text-rose-400">
+                            <div>⚡ Transaction Securing: Enforced token mappings</div>
+                            <div>⚡ Payout Execution: Instant ledger split hooks</div>
+                            <div>⚡ Compliance rating: PCI-DSS Compliant Tier 1</div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <span className="text-[9px] font-bold font-mono text-sky-400 uppercase tracking-widest bg-sky-950/20 px-2 py-0.5 rounded border border-sky-500/20">WebRTC Streaming Relays</span>
+                          <h3 className="text-base font-bold text-white tracking-tight">Low Latency Telehealth Media Router</h3>
+                          <p className="text-xs text-neutral-400 leading-relaxed font-sans mt-2">
+                            Handles buffer-free high frame-rate consultations. Synchronizes SDP session descriptors, manages STUN/TURN peer negotiations, and automatically calibrates video quality dynamically according to networking latency indexes.
+                          </p>
+                          <div className="space-y-1 pt-2 font-mono text-[9px] text-cyan-400">
+                            <div>⚡ Stream delay: &lt;15ms over direct peers</div>
+                            <div>⚡ Frame consistency: 60 - 120 FPS active</div>
+                            <div>⚡ Inter-Encryption: SRTP AES-256 enabled</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-4 border-t border-white/5 mt-6 flex justify-between items-center text-[8.5px] font-mono text-neutral-500">
+                      <span>Click different network topology nodes</span>
+                      <span className="text-[#00ffcc]">Status: ONLINE</span>
+                    </div>
+                  </div>
+
+                </div>
               </motion.div>
             )}
 
